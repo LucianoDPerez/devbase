@@ -29,7 +29,13 @@ func TestGitSHANoRepo(t *testing.T) {
 	}
 }
 
-// Unknown stacks skip the build check instead of inventing one.
+// Playwright is conditional: no config means SKIP, never a invented failure.
+func TestPlaywrightCheckSkip(t *testing.T) {
+	r := playwrightCheck(t.TempDir())
+	if r.Status != Skip {
+		t.Errorf("playwrightCheck(no config) = %v, want SKIP", r.Status)
+	}
+}
 func TestBuildCheckUnknownStack(t *testing.T) {
 	r := buildCheck(t.TempDir())
 	if r.Status != Skip {

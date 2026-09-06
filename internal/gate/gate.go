@@ -12,6 +12,7 @@ import (
 )
 
 const timeout = 120 * time.Second
+const e2eTimeout = 300 * time.Second
 const maxOut = 3500
 
 // Status is the outcome of a single check.
@@ -50,6 +51,7 @@ func (r Report) Verdict() Status {
 func Run(dir string) Report {
 	rep := Report{SHA: gitSHA(dir)}
 	rep.Results = append(rep.Results, buildCheck(dir))
+	rep.Results = append(rep.Results, playwrightCheck(dir))
 	rep.Results = append(rep.Results, semgrepCheck(dir))
 	return rep
 }
@@ -93,6 +95,10 @@ func safePaths(args []string) []string {
 }
 
 func doRun(dir string, cmd *exec.Cmd) (int, string) {
+	return doRunTimeout(timeout, dir, cmd)
+}
+
+func doRunTimeout(d time.Duration, dir string, cmd *exec.Cmd) (int, string) {
 	cmd.Dir = dir
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -101,7 +107,7 @@ func doRun(dir string, cmd *exec.Cmd) (int, string) {
 	if err := cmd.Start(); err != nil {
 		return -1, err.Error()
 	}
-	timer := time.AfterFunc(timeout, func() { _ = cmd.Process.Kill() })
+	timer := time.AfterFunc(d, func() { _ = cmd.Process.Kill() })
 	err := cmd.Wait()
 	timer.Stop()
 	code := 0
@@ -183,6 +189,41 @@ func changedPy(dir string) []string {
 		add(out)
 	}
 	return files
+}
+
+func npxOutTimeout(d time.Duration, dir string, args ...string) (int, string) {
+	return doRunTimeout(d, dir, exec.Command("npx", args...))
+}
+
+// playwrightCheck runs E2E specs only when the project has them: a
+// playwright.config in the root or a conventional subdir. No config means
+// SKIP — Playwright is conditional, never a default requirement.
+func playwrightCheck(dir string) Result {
+	e2eDir := ""
+	for _, sub := range []string{".", "frontend", "web", "client", "app", "ui", "e2e", "tests"} {
+		base := filepath.Join(dir, sub)
+		if hasConfig(base) {
+			e2eDir = base
+			break
+		}
+	}
+	if e2eDir == "" {
+		return Result{"playwright", Skip, "no playwright.config found"}
+	}
+	code, out := npxOutTimeout(e2eTimeout, e2eDir, "playwright", "test", "--reporter=line")
+	switch {
+	case code == 0:
+		return Result{"playwright", Pass, "e2e green"}
+	case strings.Contains(out, "Executable doesn't exist") || strings.Contains(out, "Host system is missing dependencies"):
+		return Result{"playwright", Fail, "browsers not installed — run: npx playwright install --with-deps"}
+	default:
+		return Result{"playwright", Fail, out}
+	}
+}
+
+func hasConfig(base string) bool {
+	m, _ := filepath.Glob(filepath.Join(base, "playwright.config.*"))
+	return len(m) > 0
 }
 
 func semgrepCheck(dir string) Result {

@@ -83,6 +83,30 @@ func Detect(dir string) []string {
 	return append(stacks, "security")
 }
 
+// WebFrontend reports whether dir (or a conventional subdir like frontend/,
+// web/, client/) hosts a browser UI: a frontend framework dependency or a
+// bundler/framework config file. Backend-only Node (express, fastify) does
+// not count — Playwright needs a UI to drive.
+func WebFrontend(dir string) bool {
+	subs := []string{".", "frontend", "web", "client", "app", "ui"}
+	for _, sub := range subs {
+		base := filepath.Join(dir, sub)
+		manifest := readMany(base, []string{"package.json"})
+		if manifest == "" {
+			continue
+		}
+		for _, fw := range []string{`"react"`, `"vue"`, `"angular"`, `"svelte"`, `"next"`, `"nuxt"`, `"solid-js"`, `"preact"`, `"@vitejs/`, `"vite"`, `"webpack"`} {
+			if contains(manifest, fw) {
+				return true
+			}
+		}
+		if globAny(base, []string{"vite.config.*", "next.config.*", "vue.config.*", "angular.json", "nuxt.config.*", "svelte.config.*"}) {
+			return true
+		}
+	}
+	return false
+}
+
 func has(dir, name string) bool {
 	_, err := os.Stat(filepath.Join(dir, name))
 	return err == nil

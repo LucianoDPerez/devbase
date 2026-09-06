@@ -128,6 +128,7 @@ DevBase nunca carga "todas las reglas". Carga por niveles (metadata → skill �
 - [x] Detección de stack (`core → php/js/go/python → security`)
 - [x] `init`: reglas contextuales en `.devbase/` + `--wire` (setup externo por IDE)
 - [x] `gate`: VERIFIED / BLOCKED con SHA exacto (build + Semgrep ERROR-only)
+- [x] Playwright condicional: sugerido en frontends, corre solo con `playwright.config`
 - [x] Instalador `install.sh` / `install.ps1` + releases con checksums
 - [ ] Adapters fase 2: Cline, Roo Code, Kilo Code, Continue.dev
 - [ ] `gate`: tests del proyecto + PHPStan/ESLint por stack
