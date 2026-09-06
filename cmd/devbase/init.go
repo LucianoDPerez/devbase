@@ -52,32 +52,12 @@ func runInit(args []string) error {
 		return err
 	}
 
-	stacks := detect.Detect(*dir)
-	written, err := packs.Write(*dir, stacks)
+	stacks, secs, written, err := writeProject(*dir)
 	if err != nil {
 		return err
 	}
-	secs, err := loadSections(*dir, written)
-	if err != nil {
-		return err
-	}
-
 	targets := pickIDEs(*dir, *ides)
-	merged := map[string]string{} // target path -> content (dedupes AGENTS.md)
-	owners := map[string][]string{}
-	for _, ide := range targets {
-		files, err := render.Files(ide.Name, secs)
-		if err != nil {
-			return err
-		}
-		for rel, content := range files {
-			if _, dup := merged[rel]; !dup {
-				merged[rel] = content
-			}
-			owners[rel] = append(owners[rel], ide.Name)
-		}
-	}
-	rendered, err := render.WriteFiles(*dir, merged)
+	rendered, owners, err := renderProject(*dir, secs, targets)
 	if err != nil {
 		return err
 	}
@@ -102,26 +82,68 @@ func runInit(args []string) error {
 		if resolvePathFirst(ide, *dir) == "" {
 			continue
 		}
-		target, ok := engramSetup[ide.Name]
-		switch {
-		case !*wire:
+		if *wire {
+			wireIDE(ide)
+		} else {
 			fmt.Fprintf(os.Stdout, "wire %s: run with --wire to configure\n", ide.Name)
-		case !ok || target == "":
-			fmt.Fprintf(os.Stdout, "wire %s: manual step — engram docs for this agent\n", ide.Name)
-		default:
-			if _, err := exec.LookPath("engram"); err != nil {
-				fmt.Fprintf(os.Stdout, "wire %s: SKIP (engram not installed)\n", ide.Name)
-				continue
-			}
-			cmd := exec.Command("engram", "setup", target)
-			if out, err := cmd.CombinedOutput(); err != nil {
-				fmt.Fprintf(os.Stdout, "wire %s: FAIL (%v: %s)\n", ide.Name, err, string(out))
-			} else {
-				fmt.Fprintf(os.Stdout, "wire %s: OK\n", ide.Name)
-			}
 		}
 	}
 	return nil
+}
+
+// writeProject detects the stack and writes .devbase/rules.
+func writeProject(dir string) ([]string, []render.Section, []string, error) {
+	stacks := detect.Detect(dir)
+	written, err := packs.Write(dir, stacks)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	secs, err := loadSections(dir, written)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return stacks, secs, written, nil
+}
+
+// renderProject generates native rule files for targets, deduping shared
+// paths (e.g. AGENTS.md for opencode+codex).
+func renderProject(dir string, secs []render.Section, targets []adapters.IDE) ([]string, map[string][]string, error) {
+	merged := map[string]string{}
+	owners := map[string][]string{}
+	for _, ide := range targets {
+		files, err := render.Files(ide.Name, secs)
+		if err != nil {
+			return nil, nil, err
+		}
+		for rel, content := range files {
+			if _, dup := merged[rel]; !dup {
+				merged[rel] = content
+			}
+			owners[rel] = append(owners[rel], ide.Name)
+		}
+	}
+	rendered, err := render.WriteFiles(dir, merged)
+	return rendered, owners, err
+}
+
+// wireIDE runs the external tool setup for one IDE.
+func wireIDE(ide adapters.IDE) {
+	target, ok := engramSetup[ide.Name]
+	switch {
+	case !ok || target == "":
+		fmt.Fprintf(os.Stdout, "wire %s: manual step — engram docs for this agent\n", ide.Name)
+	default:
+		if _, err := exec.LookPath("engram"); err != nil {
+			fmt.Fprintf(os.Stdout, "wire %s: SKIP (engram not installed)\n", ide.Name)
+			return
+		}
+		cmd := exec.Command("engram", "setup", target)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			fmt.Fprintf(os.Stdout, "wire %s: FAIL (%v: %s)\n", ide.Name, err, string(out))
+		} else {
+			fmt.Fprintf(os.Stdout, "wire %s: OK\n", ide.Name)
+		}
+	}
 }
 
 // loadSections reads the written rule files back into stack-scoped sections.

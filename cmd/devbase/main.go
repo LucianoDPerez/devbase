@@ -16,6 +16,8 @@ func main() {
 	}
 	var err error
 	switch os.Args[1] {
+	case "setup":
+		err = runSetup(os.Args[2:])
 	case "init":
 		err = runInit(os.Args[2:])
 	case "doctor":
@@ -44,6 +46,7 @@ Usage:
   devbase <command> [options]
 
 Commands:
+  setup     Full bootstrap: install deps, write rules, wire IDEs, verify
   init      Detect the project stack and write contextual rules to .devbase/
   doctor    Show detected IDEs, dependencies and optional API keys (read-only)
   gate      Run deterministic verification, emit VERIFIED/BLOCKED with evidence
@@ -53,6 +56,7 @@ Global options:
   version              Print version
 
 Examples:
+  devbase setup --dir /path/to/project
   devbase doctor
   devbase init --dir /path/to/project
   devbase init --dir . --wire
