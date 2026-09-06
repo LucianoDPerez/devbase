@@ -16,6 +16,21 @@ import (
 //go:embed all:data
 var files embed.FS
 
+// Stacks lists every pack stack present in the embedded data (e.g. "core",
+// "php/laravel"), sorted. Used by tooling and by tests to prove detection
+// never returns a stack without rules.
+func Stacks() []string {
+	var out []string
+	_ = fs.WalkDir(files, "data", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || !d.IsDir() || p == "data" {
+			return nil
+		}
+		out = append(out, strings.TrimPrefix(p, "data/"))
+		return nil
+	})
+	return out
+}
+
 // Write copies every file under packs/<stack>/ for each stack into
 // dir/.devbase/rules/<stack>/. Missing pack dirs are skipped silently.
 // Returns the written destination files.
