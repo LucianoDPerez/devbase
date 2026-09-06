@@ -54,8 +54,45 @@ func Run(dir string) Report {
 	return rep
 }
 
-func run(dir, name string, args ...string) (int, string) {
-	cmd := exec.Command(name, args...)
+// Typed wrappers keep the executed binary a string literal at every call
+// site (auditable, allowlisted) instead of threading it as a variable.
+func gitOut(dir string, args ...string) (int, string) {
+	return doRun(dir, exec.Command("git", args...))
+}
+
+func goOut(dir string, args ...string) (int, string) {
+	return doRun(dir, exec.Command("go", args...))
+}
+
+func npmOut(dir string, args ...string) (int, string) {
+	return doRun(dir, exec.Command("npm", args...))
+}
+
+func pythonOut(dir string, args ...string) (int, string) {
+	return doRun(dir, exec.Command("python3", safePaths(args)...))
+}
+
+func semgrepOut(dir string, args ...string) (int, string) {
+	return doRun(dir, exec.Command("semgrep", args...))
+}
+
+// safePaths drops path arguments that could escape the repo or be parsed as
+// options (absolute paths, parent traversal, option-looking filenames).
+func safePaths(args []string) []string {
+	var out []string
+	for _, a := range args {
+		if strings.HasPrefix(a, "-") || filepath.IsAbs(a) {
+			continue
+		}
+		if a != filepath.Clean(a) || strings.HasPrefix(a, "..") {
+			continue
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
+func doRun(dir string, cmd *exec.Cmd) (int, string) {
 	cmd.Dir = dir
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -83,7 +120,7 @@ func run(dir, name string, args ...string) (int, string) {
 }
 
 func gitSHA(dir string) string {
-	code, out := run(dir, "git", "rev-parse", "--short", "HEAD")
+	code, out := gitOut(dir, "rev-parse", "--short", "HEAD")
 	if code != 0 {
 		return "nogit"
 	}
@@ -98,10 +135,10 @@ func has(dir, name string) bool {
 func buildCheck(dir string) Result {
 	switch {
 	case has(dir, "go.mod"):
-		if code, out := run(dir, "go", "build", "./..."); code != 0 {
+		if code, out := goOut(dir, "build", "./..."); code != 0 {
 			return Result{"go build", Fail, out}
 		}
-		if code, out := run(dir, "go", "vet", "./..."); code != 0 {
+		if code, out := goOut(dir, "vet", "./..."); code != 0 {
 			return Result{"go vet", Fail, out}
 		}
 		return Result{"go build+vet", Pass, "clean"}
@@ -110,7 +147,7 @@ func buildCheck(dir string) Result {
 		if err != nil || !strings.Contains(string(data), `"build"`) {
 			return Result{"npm build", Skip, "no build script"}
 		}
-		if code, out := run(dir, "npm", "run", "-s", "build"); code != 0 {
+		if code, out := npmOut(dir, "run", "-s", "build"); code != 0 {
 			return Result{"npm build", Fail, out}
 		}
 		return Result{"npm build", Pass, "clean"}
@@ -120,7 +157,7 @@ func buildCheck(dir string) Result {
 			return Result{"py_compile", Skip, "no python files changed"}
 		}
 		args := append([]string{"-m", "py_compile"}, files...)
-		if code, out := run(dir, "python3", args...); code != 0 {
+		if code, out := pythonOut(dir, args...); code != 0 {
 			return Result{"py_compile", Fail, out}
 		}
 		return Result{"py_compile", Pass, "clean"}
@@ -139,10 +176,10 @@ func changedPy(dir string) []string {
 			}
 		}
 	}
-	if code, out := run(dir, "git", "diff", "--name-only", "HEAD"); code == 0 {
+	if code, out := gitOut(dir, "diff", "--name-only", "HEAD"); code == 0 {
 		add(out)
 	}
-	if code, out := run(dir, "git", "ls-files", "--others", "--exclude-standard"); code == 0 {
+	if code, out := gitOut(dir, "ls-files", "--others", "--exclude-standard"); code == 0 {
 		add(out)
 	}
 	return files
@@ -152,7 +189,7 @@ func semgrepCheck(dir string) Result {
 	if _, err := exec.LookPath("semgrep"); err != nil {
 		return Result{"semgrep", Skip, "not installed"}
 	}
-	code, out := run(dir, "semgrep", "scan", "--config", "auto", "--severity", "ERROR", "--error")
+	code, out := semgrepOut(dir, "scan", "--config", "auto", "--severity", "ERROR", "--error")
 	switch code {
 	case 0:
 		return Result{"semgrep", Pass, "no ERROR findings"}

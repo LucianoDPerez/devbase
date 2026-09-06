@@ -13,7 +13,10 @@ No `Co-Authored-By` trailers, no AI attribution in commits or PRs.
 
 ## Code
 
-- `go vet ./...` and `go build ./...` must pass before pushing.
+- `go generate ./...`, `gofmt -l .` (empty), `go vet ./...`, `go build ./...`
+  and `go test ./...` must pass before pushing.
+- New stacks need a pack AND a `detect` matrix case; the
+  `TestDetectStacksHavePacks` meta-test enforces the pairing.
 - One row per IDE in `internal/adapters`; core never hardcodes IDE paths.
 - External tools self-configure via their own installers; DevBase invokes
   them instead of duplicating their logic.
