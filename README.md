@@ -73,6 +73,16 @@ Dependencies:
   ✗ semgrep              missing
 ```
 
+## API keys opcionales
+
+Ninguna es obligatoria para arrancar:
+
+| Key | Para qué | Dónde conseguirla |
+|---|---|---|
+| `CONTEXT7_API_KEY` | Context7 con límites básicos funciona sin key; la key gratis sube el límite | https://context7.com/dashboard |
+
+`devbase doctor` te avisa si falta.
+
 ## Cómo ahorra tokens
 
 DevBase nunca carga "todas las reglas". Carga por niveles (metadata → skill → referencias, solo lo activado) y por stack detectado (un proyecto Laravel no recibe reglas de React). Medido en la industria: 60–96% menos tokens por sesión según el tipo de tarea.
