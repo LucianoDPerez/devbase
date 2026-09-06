@@ -62,10 +62,25 @@ check_field() { # name dir jq_expr expected (python)
   fi
 }
 
-echo "== fixtures =="
-check clean-go 0 "$FIX/clean-go"
-check broken-node 1 "$FIX/broken-node"
-check vulnerable-py 1 "$FIX/vulnerable-py"
+echo "== fixtures (staged outside the repo for hermetic runs) =="
+stage() { # name -> prints temp dir
+  local tmp
+  tmp="$(mktemp -d)"
+  cp -r "$FIX/$1/." "$tmp/"
+  echo "$tmp"
+}
+
+STAGE_CLEAN="$(stage clean-go)"
+check clean-go 0 "$STAGE_CLEAN"
+rm -rf "$STAGE_CLEAN"
+
+STAGE_BROKEN="$(stage broken-node)"
+check broken-node 1 "$STAGE_BROKEN"
+rm -rf "$STAGE_BROKEN"
+
+STAGE_VULN="$(stage vulnerable-py)"
+check vulnerable-py 1 "$STAGE_VULN"
+rm -rf "$STAGE_VULN"
 
 EMPTY_DIR="$(mktemp -d)"
 check empty-dir 2 "$EMPTY_DIR"
