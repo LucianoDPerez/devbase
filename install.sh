@@ -44,3 +44,11 @@ case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
   *) echo "NOTE: $BIN_DIR is not in PATH. Add: export PATH=\"$BIN_DIR:\$PATH\"" ;;
 esac
+echo ""
+echo "--- your setup ---"
+"$BIN_DIR/devbase" doctor || true
+echo ""
+echo "next steps (run inside your project):"
+echo "  devbase init --dir .                 # write contextual rules to .devbase/"
+echo "  devbase init --dir . --wire          # also configure detected IDEs"
+echo "  devbase gate --dir .                 # verify with evidence"
