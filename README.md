@@ -66,7 +66,7 @@ None required. `CONTEXT7_API_KEY` raises Context7 limits (free at https://contex
 
 ## Status and roadmap
 
-`v0.12.x`: interactive setup, 25 rule packs, strict gate with JSON evidence (project suites + build + Semgrep + conditional E2E), checksum installers, CI with tests + Semgrep.
+`v0.13.x`: interactive setup, 25 rule packs, strict gate with JSON evidence (project suites + build + Semgrep + conditional E2E), checksum installers, CI with tests + Semgrep + always-on E2E battery.
 
 VERIFIED means: the defined checks passed on this exact snapshot (commit + working tree + toolchain on record). Not "correct" — proven and reproducible.
 

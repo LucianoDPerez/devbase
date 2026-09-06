@@ -1,0 +1,9 @@
+{
+  "name": "e2e-broken",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"process.exit(1)\"",
+    "test": "node -e \"process.exit(1)\""
+  }
+}

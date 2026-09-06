@@ -66,7 +66,7 @@ Ninguna es obligatoria. `CONTEXT7_API_KEY` sube los límites de Context7 (gratis
 
 ## Estado y roadmap
 
-`v0.12.x`: setup interactivo, 25 packs de reglas, gate estricto con evidencia JSON (suites del proyecto + build + Semgrep + E2E condicional), instaladores con checksum, CI con tests + Semgrep.
+`v0.13.x`: setup interactivo, 25 packs de reglas, gate estricto con evidencia JSON (suites del proyecto + build + Semgrep + E2E condicional), instaladores con checksum, CI con tests + Semgrep + batería E2E permanente.
 
 VERIFIED significa: los checks definidos pasaron en este snapshot exacto (commit + working tree + toolchain registrados). No significa "correcto" — significa probado y reproducible.
 

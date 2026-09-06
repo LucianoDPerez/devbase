@@ -15,6 +15,11 @@
 
 # Local evidence artifacts (per-run, never committed)
 /.devbase/evidence/
+/.devbase/evidence-e2e/
+
+# Gate side effects inside e2e fixtures
+testdata/**/.devbase/
+testdata/e2e/clean-go/e2eclean
 
 # Local dev
 .devbase.local/
