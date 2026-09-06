@@ -33,9 +33,11 @@ try {
   Write-Host "--- your setup ---"
   & (Join-Path $BinDir "devbase.exe") doctor
   Write-Host ""
-  Write-Host "next steps - full bootstrap (installs deps, writes rules, wires IDEs):"
-  Write-Host "  cd C:\path\to\your\project"
-  Write-Host "  devbase setup --dir ."
+  Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
+  Write-Host "  NEXT STEP - run this inside your project folder:" -ForegroundColor Green
+  Write-Host "    cd C:\path\to\your\project" -ForegroundColor White -BackgroundColor DarkGray
+  Write-Host "    devbase setup --dir ." -ForegroundColor White -BackgroundColor DarkGray
+  Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Green
   Write-Host ""
   Write-Host "Or step by step:"
   Write-Host "  devbase doctor                   # read-only diagnosis"

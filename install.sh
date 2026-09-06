@@ -48,9 +48,17 @@ echo ""
 echo "--- your setup ---"
 "$BIN_DIR/devbase" doctor || true
 echo ""
-echo "next steps — full bootstrap (installs deps, writes rules, wires IDEs):"
-echo "  cd /path/to/your/project"
-echo "  devbase setup --dir ."
+# Highlight the next step; plain text when not a TTY.
+if [ -t 1 ]; then
+  BOLD='\033[1m'; GREEN='\033[1;32m'; CYAN='\033[1;36m'; RESET='\033[0m'
+else
+  BOLD=''; GREEN=''; CYAN=''; RESET=''
+fi
+printf "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"
+printf "${GREEN}  NEXT STEP — run this inside your project folder:${RESET}\n"
+printf "${BOLD}    cd /path/to/your/project${RESET}\n"
+printf "${BOLD}    devbase setup --dir .${RESET}\n"
+printf "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"
 echo ""
 echo "Or step by step:"
 echo "  devbase doctor                   # read-only diagnosis"

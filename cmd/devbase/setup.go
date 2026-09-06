@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devbase/devbase/internal/adapters"
 	"github.com/devbase/devbase/internal/detect"
 	"github.com/devbase/devbase/internal/mcpmerge"
 	"github.com/devbase/devbase/internal/pm"
@@ -74,6 +75,25 @@ func runSetup(args []string) error {
 
 	info := pm.Detect()
 	allStacks := detect.Detect(*dir)
+
+	// 0a. Which IDEs? Flag wins; otherwise ask (detected ones pre-checked).
+	var targets []adapters.IDE
+	if *ides != "detected" {
+		targets = pickIDEs(*dir, *ides)
+	} else {
+		entries := ideEntries(*dir)
+		if !*yes {
+			var err error
+			entries, err = tui.Select("DevBase — ¿en qué IDEs lo instalamos?", entries)
+			if err != nil {
+				return err
+			}
+		}
+		targets = targetsFromSelection(adapters.Supported(), tui.SelectedIDs(entries))
+		if len(targets) == 0 {
+			return fmt.Errorf("no IDE selected — nothing to configure")
+		}
+	}
 
 	// 0. Catalog checklist: everything on by default, space toggles.
 	catalog := buildCatalog(info, allStacks)
@@ -155,7 +175,6 @@ func runSetup(args []string) error {
 	if err != nil {
 		return err
 	}
-	targets := pickIDEs(*dir, *ides)
 	rendered, _, err := renderProject(*dir, secs, targets)
 	if err != nil {
 		return err
@@ -304,6 +323,38 @@ func runSetup(args []string) error {
 		fmt.Fprintln(out, ui.Dim("then restart your IDE."))
 	}
 	return nil
+}
+
+// ideEntries builds the IDE picker rows: detected IDEs pre-checked,
+// the rest offered unchecked.
+func ideEntries(dir string) []tui.Entry {
+	var out []tui.Entry
+	for _, ide := range adapters.Supported() {
+		note := "no detectado"
+		on := false
+		if resolvePathFirst(ide, dir) != "" {
+			note, on = "config encontrada", true
+		} else if ide.ProjectMarker != "" {
+			if _, err := os.Stat(filepath.Join(dir, ide.ProjectMarker)); err == nil {
+				note, on = "usado en este proyecto", true
+			}
+		}
+		out = append(out, tui.Entry{
+			Group: "IDEs", ID: "ide:" + ide.Name, Name: ide.Name, Use: "reglas + MCP + wiring", Note: note, On: on,
+		})
+	}
+	return out
+}
+
+// targetsFromSelection maps checked IDE entries back to adapters.
+func targetsFromSelection(all []adapters.IDE, sel map[string]bool) []adapters.IDE {
+	var out []adapters.IDE
+	for _, ide := range all {
+		if sel["ide:"+ide.Name] {
+			out = append(out, ide)
+		}
+	}
+	return out
 }
 
 func isInstalled(bin string) bool {
