@@ -15,6 +15,7 @@
 
 # Local evidence artifacts (per-run, never committed)
 /.devbase/evidence/
+/.devbase/evidence-e2e/
 
 # Local dev
 .devbase.local/

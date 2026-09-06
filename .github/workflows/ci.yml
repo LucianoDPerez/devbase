@@ -30,6 +30,30 @@ jobs:
       # Semgrep installed above: gate fixtures assert real PASS, not SKIP.
       - run: go test ./...
 
+  e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.25"
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install semgrep
+      - run: bash scripts/e2e.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-e2e
+          path: .devbase/evidence-e2e/
+
   semgrep:
     runs-on: ubuntu-latest
     permissions:
