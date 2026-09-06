@@ -33,14 +33,17 @@ try {
   Write-Host "--- your setup ---"
   & (Join-Path $BinDir "devbase.exe") doctor
   Write-Host ""
-  Write-Host "next steps - run these INSIDE your project folder:"
+  Write-Host "next steps - full bootstrap (installs deps, writes rules, wires IDEs):"
   Write-Host "  cd C:\path\to\your\project"
-  Write-Host "  devbase init --dir .                 # write contextual rules to .devbase/"
-  Write-Host "  devbase init --dir . --wire          # also configure your detected IDEs"
-  Write-Host "  devbase gate --dir .                 # verify with evidence"
+  Write-Host "  devbase setup --dir ."
+  Write-Host ""
+  Write-Host "Or step by step:"
+  Write-Host "  devbase doctor                   # read-only diagnosis"
+  Write-Host "  devbase init --dir . --wire      # rules + IDE wiring"
+  Write-Host "  devbase gate --dir .             # verify with evidence"
   Write-Host ""
   Write-Host "Each detected IDE (Cursor, VS Code, Claude Code, OpenCode...) is wired"
-  Write-Host "automatically by --wire. Restart your IDE afterwards so it picks up the config."
+  Write-Host "automatically. Restart your IDE afterwards so it picks up the config."
 } finally {
   Remove-Item $Tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
