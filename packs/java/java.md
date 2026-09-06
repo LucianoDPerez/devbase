@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Java
 
 Prefer records and sealed types for data. Streams for readable transforms, loops

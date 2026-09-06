@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Next.js
 
 Server Components by default; `'use client'` only at the leaves that need it.

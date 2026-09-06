@@ -179,9 +179,24 @@ func loadSections(dir string, written []string) ([]render.Section, error) {
 		if err != nil {
 			return nil, err
 		}
-		secs = append(secs, render.Section{Stack: stack, Body: string(data)})
+		secs = append(secs, render.Section{Stack: stack, Body: stripFrontmatter(string(data))})
 	}
 	return secs, nil
+}
+
+// stripFrontmatter removes a leading YAML --- block (pack taxonomy level)
+// so authoring metadata never leaks into rendered IDE files.
+func stripFrontmatter(body string) string {
+	lines := strings.Split(body, "\n")
+	if len(lines) < 3 || strings.TrimSpace(lines[0]) != "---" {
+		return body
+	}
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "---" {
+			return strings.TrimLeft(strings.Join(lines[i+1:], "\n"), "\n")
+		}
+	}
+	return body
 }
 
 // pickIDEs selects which IDEs to render for: "detected", "all", or a list.

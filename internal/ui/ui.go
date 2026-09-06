@@ -17,6 +17,7 @@ var (
 	headStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true)
 	verdictOK  = lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true).Padding(0, 1).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("2"))
 	verdictBad = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true).Padding(0, 1).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("1"))
+	verdictMid = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true).Padding(0, 1).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("3"))
 )
 
 // Ok renders a success row: "  ✓ name  detail".
@@ -39,12 +40,16 @@ func Section(name string) string {
 	return headStyle.Render("── " + name + " ──")
 }
 
-// Verdict renders the boxed VERIFIED / BLOCKED stamp.
-func Verdict(pass bool, sha string) string {
-	if pass {
+// Verdict renders the boxed VERIFIED / BLOCKED / INCOMPLETE stamp.
+func Verdict(status, sha string) string {
+	switch status {
+	case "FAIL":
+		return verdictBad.Render("✗ BLOCKED @ " + sha)
+	case "INCOMPLETE":
+		return verdictMid.Render("○ INCOMPLETE @ " + sha)
+	default:
 		return verdictOK.Render("✓ VERIFIED @ " + sha)
 	}
-	return verdictBad.Render("✗ BLOCKED @ " + sha)
 }
 
 // Dim renders faint secondary text.

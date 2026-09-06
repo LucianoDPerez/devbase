@@ -42,6 +42,18 @@ func TestBuildCatalogComplete(t *testing.T) {
 	}
 }
 
+// Pack taxonomy frontmatter must never leak into rendered rule bodies.
+func TestStripFrontmatter(t *testing.T) {
+	in := "---\nlevel: heuristic\n---\n\n# Go\n\nbody\n"
+	if got := stripFrontmatter(in); got != "# Go\n\nbody\n" {
+		t.Errorf("stripFrontmatter = %q", got)
+	}
+	plain := "# Title\n\nbody\n"
+	if got := stripFrontmatter(plain); got != plain {
+		t.Errorf("plain body altered: %q", got)
+	}
+}
+
 // IDE picker maps checked entries back to adapters, nothing else.
 func TestTargetsFromSelection(t *testing.T) {
 	got := targetsFromSelection(adapters.Supported(), map[string]bool{

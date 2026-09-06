@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # C#
 
 Nullable reference types on, warnings as errors in CI. Async all the way —

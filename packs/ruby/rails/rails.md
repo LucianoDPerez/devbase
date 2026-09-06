@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Ruby on Rails
 
 Skinny controllers, logic in models/services/jobs. Strong parameters always.

@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # SOLID
 
 Single responsibility, open/closed, Liskov, interface segregation, dependency inversion.

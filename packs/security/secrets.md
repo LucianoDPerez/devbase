@@ -1,3 +1,7 @@
+---
+level: deterministic
+---
+
 # Secrets
 
 No hardcoded API keys, tokens, or credentials in code or committed examples.

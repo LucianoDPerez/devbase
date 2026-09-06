@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # DRY / KISS / YAGNI
 
 One source of truth, simplest thing that works, no speculative generality.

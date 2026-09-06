@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Ruby
 
 RuboCop clean. Symbols for identifiers, frozen string literals. Never monkeypatch

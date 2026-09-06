@@ -13,5 +13,8 @@
 # OS
 .DS_Store
 
+# Local evidence artifacts (per-run, never committed)
+/.devbase/evidence/
+
 # Local dev
 .devbase.local/
