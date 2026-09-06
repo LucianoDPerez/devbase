@@ -17,23 +17,26 @@ EVIDENCE GATE ──► VERIFIED ✅ / BLOCKED ❌
 
 ## Estado
 
-MVP temprano (`v0.1.0`): `doctor` funcional, `init` con detección de stack, `gate` en construcción.
+`v0.2.0`: `doctor`, `init` (+`--wire`) y `gate` funcionales.
 
 ## Requisitos
 
-- Go 1.23+
 - Git (siempre), `gh` (integración GitHub vía CLI + skill, no MCP)
 - Opcional según el proyecto: `engram`, `codebase-memory-mcp`, `semgrep`
 
-## Instalación (desde fuente, por ahora)
+## Instalación
 
 ```bash
-git clone https://github.com/LucianoDPerez/devbase.git
-cd devbase
-go build -o devbase ./cmd/devbase
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.sh | bash
 ```
 
-> Binarios `curl | bash` / `install.ps1` vía GoReleaser: en roadmap.
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.ps1 | iex
+```
+
+Verifican SHA-256 contra `checksums.txt` del release. Desde fuente: `go build -o devbase ./cmd/devbase` (Go 1.23+).
 
 ## Uso
 
@@ -41,11 +44,14 @@ go build -o devbase ./cmd/devbase
 # Qué IDEs tenés configurados y qué dependencias faltan (no escribe nada)
 devbase doctor
 
-# Detectar el stack del proyecto (core → específico → security)
+# Detectar stack y escribir reglas contextuales en .devbase/
 devbase init --dir /ruta/al/proyecto
 
-# Verificación con evidencia (en construcción: tests + lint + build + Semgrep ERROR-only)
-devbase gate
+# Además ejecuta el setup de herramientas externas en los IDEs detectados
+devbase init --dir /ruta/al/proyecto --wire
+
+# Verificación con evidencia: build por stack + Semgrep ERROR-only, atado al SHA
+devbase gate --dir /ruta/al/proyecto
 ```
 
 Ejemplo real:
@@ -75,7 +81,8 @@ DevBase nunca carga "todas las reglas". Carga por niveles (metadata → skill �
 
 - [x] `doctor`: detección de IDEs + dependencias
 - [x] Detección de stack (`core → php/js/go/python → security`)
-- [ ] `init`: escritura de reglas contextuales + wiring MCP por IDE
-- [ ] `gate`: VERIFIED / BLOCKED con SHA exacto
-- [ ] Instalador `install.sh` / `install.ps1` + Homebrew / winget
+- [x] `init`: reglas contextuales en `.devbase/` + `--wire` (setup externo por IDE)
+- [x] `gate`: VERIFIED / BLOCKED con SHA exacto (build + Semgrep ERROR-only)
+- [x] Instalador `install.sh` / `install.ps1` + releases con checksums
 - [ ] Adapters fase 2: Cline, Roo Code, Kilo Code, Continue.dev
+- [ ] `gate`: tests del proyecto + PHPStan/ESLint por stack

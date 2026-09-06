@@ -5,6 +5,7 @@ project_name: devbase
 before:
   hooks:
     - go mod tidy
+    - go generate ./...
 
 builds:
   - main: ./cmd/devbase
