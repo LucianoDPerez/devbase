@@ -36,7 +36,7 @@ curl -fsSL https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.
 irm https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.ps1 | iex
 ```
 
-Verifican SHA-256 contra `checksums.txt` del release. Desde fuente: `go build -o devbase ./cmd/devbase` (Go 1.23+).
+Verifican SHA-256 contra `checksums.txt` del release. Desde fuente: `go build -o devbase ./cmd/devbase` (Go 1.25+).
 
 ## Uso
 
