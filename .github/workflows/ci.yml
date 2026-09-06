@@ -11,7 +11,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -66,3 +72,23 @@ jobs:
           python-version: "3.12"
       - run: pip install semgrep
       - run: semgrep scan --config auto --severity ERROR --error
+
+  smoke-install-sh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - run: DEVBIN=$RUNNER_TEMP/bin bash -c 'curl -fsSL https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.sh | bash'
+      - run: $RUNNER_TEMP/bin/devbase doctor
+
+  smoke-install-ps1:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - run: |
+          $env:DEVBIN = "$env:RUNNER_TEMP\bin"
+          irm https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.ps1 | iex
+        shell: powershell
+      - run: & "$env:RUNNER_TEMP\bin\devbase.exe" doctor
+        shell: powershell

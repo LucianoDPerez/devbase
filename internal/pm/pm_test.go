@@ -20,12 +20,22 @@ func TestRecipesKnownPlatforms(t *testing.T) {
 		{OS: "linux", PM: "apt"},
 		{OS: "windows", PM: "winget"},
 	}
-	// git/gh/node must install everywhere; the rest may degrade to manual.
+	// git/gh must install everywhere; node intentionally has no apt recipe
+	// (distro nodejs is too old for npx MCP servers — honest manual step).
 	for _, p := range platforms {
 		for _, d := range Deps() {
 			r := d.Recipe(p)
-			if (d.Bin == "git" || d.Bin == "gh" || d.Bin == "node") && len(r) == 0 {
+			mustHave := d.Bin == "git" || d.Bin == "gh" ||
+				(d.Bin == "node" && p.PM != "apt")
+			if mustHave && len(r) == 0 {
 				t.Errorf("dep %q has no recipe for %+v", d.Name, p)
+			}
+		}
+	}
+	for _, d := range Deps() {
+		if d.Bin == "node" {
+			if r := d.Recipe(Info{OS: "linux", PM: "apt"}); r != nil {
+				t.Errorf("apt node recipe must be nil, got %v", r)
 			}
 		}
 	}
