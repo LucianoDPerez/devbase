@@ -29,6 +29,14 @@ try {
   if (($env:PATH -split ";") -notcontains $BinDir) {
     Write-Host "NOTE: $BinDir is not in PATH. Add it via System settings or: setx PATH `"$env:PATH;$BinDir`""
   }
+  Write-Host ""
+  Write-Host "--- your setup ---"
+  & (Join-Path $BinDir "devbase.exe") doctor
+  Write-Host ""
+  Write-Host "next steps (run inside your project):"
+  Write-Host "  devbase init --dir .                 # write contextual rules to .devbase/"
+  Write-Host "  devbase init --dir . --wire          # also configure detected IDEs"
+  Write-Host "  devbase gate --dir .                 # verify with evidence"
 } finally {
   Remove-Item $Tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
