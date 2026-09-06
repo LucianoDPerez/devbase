@@ -33,6 +33,12 @@ var engramSetup = map[string]string{
 
 func runInit(args []string) error {
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
+	fs.Usage = func() {
+		fmt.Fprintln(os.Stderr, "Usage: devbase init [--dir PATH] [--wire]")
+		fmt.Fprintln(os.Stderr, "  Detect the stack and write contextual rules to .devbase/.")
+		fmt.Fprintln(os.Stderr, "  --wire also runs external tool setup (engram) for detected IDEs.")
+		fs.PrintDefaults()
+	}
 	dir := fs.String("dir", ".", "project directory to initialize")
 	wire := fs.Bool("wire", false, "also run external tool setup (engram) for detected IDEs")
 	if err := fs.Parse(args); err != nil {

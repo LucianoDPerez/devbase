@@ -11,8 +11,8 @@ var version = "dev"
 
 func main() {
 	if len(os.Args) < 2 {
-		usage()
-		os.Exit(1)
+		fmt.Print(helpText())
+		return
 	}
 	var err error
 	switch os.Args[1] {
@@ -24,9 +24,11 @@ func main() {
 		err = runGate(os.Args[2:])
 	case "version", "--version", "-v":
 		fmt.Println("devbase " + version)
+	case "help", "--help", "-h":
+		fmt.Print(helpText())
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
-		usage()
+		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n", os.Args[1])
+		fmt.Fprint(os.Stderr, helpText())
 		os.Exit(1)
 	}
 	if err != nil {
@@ -35,6 +37,25 @@ func main() {
 	}
 }
 
-func usage() {
-	fmt.Fprintln(os.Stderr, "Usage: devbase <init|doctor|gate>")
+func helpText() string {
+	return `DevBase — operating standard for development agents.
+
+Usage:
+  devbase <command> [options]
+
+Commands:
+  init      Detect the project stack and write contextual rules to .devbase/
+  doctor    Show detected IDEs, dependencies and optional API keys (read-only)
+  gate      Run deterministic verification, emit VERIFIED/BLOCKED with evidence
+
+Global options:
+  help, --help, -h     Show this help
+  version              Print version
+
+Examples:
+  devbase doctor
+  devbase init --dir /path/to/project
+  devbase init --dir . --wire
+  devbase gate --dir .
+`
 }
