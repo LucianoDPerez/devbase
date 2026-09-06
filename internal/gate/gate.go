@@ -188,7 +188,7 @@ func doRunTimeout(d time.Duration, dir, bin string, cmd *exec.Cmd, args []string
 	}
 	s := out.String()
 	if len(s) > maxOut {
-		s = s[len(s)-maxOut:]
+		s = s[:maxOut] + "\n…(truncated)"
 	}
 	o.out = strings.TrimSpace(s)
 	return o
