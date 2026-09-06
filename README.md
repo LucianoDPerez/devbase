@@ -90,6 +90,25 @@ Ninguna es obligatoria para arrancar:
 
 DevBase nunca carga "todas las reglas". Carga por niveles (metadata → skill → referencias, solo lo activado) y por stack detectado (un proyecto Laravel no recibe reglas de React). Medido en la industria: 60–96% menos tokens por sesión según el tipo de tarea.
 
+## Stacks soportados
+
+`core` + `security` siempre. Detección por markers y dependencias:
+
+| Stack | Detecta por |
+|---|---|
+| `php`, `php/laravel` | `composer.json`, `artisan` + `laravel/framework` |
+| `js`, `js/react`, `js/nextjs` | `package.json`, `tsconfig.json` + deps |
+| `python`, `python/django` | `requirements.txt`, `pyproject.toml` + `django` |
+| `go` | `go.mod` |
+| `rust` | `Cargo.toml` |
+| `ruby`, `ruby/rails` | `Gemfile` + `rails` |
+| `csharp` | `*.csproj`, `*.sln` |
+| `c` / `cpp` | `CMakeLists.txt` (+ presencia de `*.cpp`) |
+| `java`, `java/spring`, `kotlin` | `pom.xml`, `build.gradle(.kts)` |
+| `swift` | `Package.swift`, `*.xcodeproj` |
+| `flutter` | `pubspec.yaml` |
+| `sql` | `*.sql` |
+
 ## Roadmap
 
 - [x] `doctor`: detección de IDEs + dependencias
