@@ -10,6 +10,7 @@ import (
 	"github.com/devbase/devbase/internal/detect"
 	"github.com/devbase/devbase/internal/mcpmerge"
 	"github.com/devbase/devbase/internal/pm"
+	"github.com/devbase/devbase/internal/skills"
 	"github.com/devbase/devbase/internal/ui"
 )
 
@@ -18,6 +19,36 @@ import (
 var context7Entry = map[string]any{
 	"command": "npx",
 	"args":    []any{"-y", "@upstash/context7-mcp"},
+}
+
+// toolUse explains what each dependency binary is for.
+var toolUse = map[string]string{
+	"git":                 "versionado del proyecto",
+	"gh":                  "PRs, issues y releases de GitHub",
+	"node":                "servidores MCP vía npx (p. ej. Context7)",
+	"semgrep":             "seguridad SAST en el gate",
+	"engram":              "memoria persistente entre sesiones",
+	"codebase-memory-mcp": "grafo estructural del código",
+}
+
+// stackUse explains what each rule pack is for.
+var stackUse = map[string]string{
+	"core": "diseño limpio y SOLID", "security": "OWASP Top 10 y secretos",
+	"php": "estándares PHP", "php/laravel": "convenciones Laravel",
+	"js": "estándares JS/TS", "js/react": "patrones React", "js/nextjs": "App Router y server components",
+	"python": "estándares Python", "python/django": "ORM, vistas y migraciones",
+	"go": "build, vet y tests", "rust": "ownership, clippy y unsafe auditado",
+	"ruby": "estilo y bundle audit", "ruby/rails": "MVC, strong params y jobs",
+	"csharp": "async y nullables en .NET", "c": "C estricto y sanitizers",
+	"cpp": "C++ moderno y clang-tidy", "sql": "queries parametrizadas e índices",
+	"kotlin": "null safety y corrutinas", "swift": "optionals y concurrencia",
+	"flutter": "widgets tontos y analyze limpio",
+}
+
+// skillUse explains what each starter skill is for.
+var skillUse = map[string]string{
+	"dev-review": "revisión pre-commit con evidencia",
+	"dev-commit": "commits convencionales con gate previo",
 }
 
 func runSetup(args []string) error {
@@ -104,8 +135,16 @@ func runSetup(args []string) error {
 	fmt.Fprintf(out, "  stacks: %s\n", strings.Join(stacks, ", "))
 	fmt.Fprintf(out, "  %d native rule files rendered\n\n", len(rendered))
 
+	// 2b. Starter workflow skills.
+	if _, err := skills.Install(*dir); err != nil {
+		return err
+	}
+	fmt.Fprintln(out, ui.Section("Skills"))
+	fmt.Fprintf(out, "  %d workflow skills installed (.agents/skills, .claude/skills)\n\n", len(skills.Names()))
+
 	// 3. MCP entries (Context7; Engram and codebase-memory self-configure).
 	fmt.Fprintln(out, ui.Section("MCP"))
+	mcpActive := map[string]bool{}
 	for _, ide := range targets {
 		cfg := resolvePathFirst(ide, *dir)
 		if cfg == "" {
@@ -121,14 +160,17 @@ func runSetup(args []string) error {
 			}
 		case changed:
 			fmt.Fprintln(out, ui.Ok(ide.Name, "context7 added"))
+			mcpActive["context7"] = true
 		default:
 			fmt.Fprintln(out, ui.Ok(ide.Name, "context7 present"))
+			mcpActive["context7"] = true
 		}
 	}
 	fmt.Fprintln(out)
 
 	// 4. External wiring.
 	fmt.Fprintln(out, ui.Section("Wiring"))
+	wiredEngram := false
 	for _, ide := range targets {
 		if resolvePathFirst(ide, *dir) == "" {
 			continue
@@ -139,6 +181,54 @@ func runSetup(args []string) error {
 		} else if ide.Name == "claude-code" {
 			addPending("Claude Code: claude plugin marketplace add Gentleman-Programming/engram && claude plugin install engram")
 		}
+		if status == "ok" {
+			wiredEngram = true
+		}
+	}
+	fmt.Fprintln(out)
+	if isInstalled("codebase-memory-mcp") {
+		mcpActive["codebase-memory"] = true
+	}
+
+	// 5. What you got, grouped by utility.
+	fmt.Fprintln(out, ui.Section("Tu DevBase incluye"))
+	fmt.Fprintln(out, "  MCPs (datos vivos para el agente):")
+	if mcpActive["context7"] {
+		fmt.Fprintln(out, "    · context7 — documentación actual de librerías")
+	}
+	if wiredEngram {
+		mcpActive["engram"] = true
+		fmt.Fprintln(out, "    · engram — memoria persistente entre sesiones")
+	}
+	if mcpActive["codebase-memory"] {
+		fmt.Fprintln(out, "    · codebase-memory — grafo estructural del repo")
+	}
+	fmt.Fprintln(out, "  Skills (cómo trabaja el agente):")
+	for _, n := range skills.Names() {
+		use := skillUse[n]
+		if use == "" {
+			use = "workflow del agente"
+		}
+		fmt.Fprintf(out, "    · %s — %s\n", n, use)
+	}
+	fmt.Fprintln(out, "  Reglas (cómo debe salir el código):")
+	for _, s := range stacks {
+		use := stackUse[s]
+		if use == "" {
+			use = "reglas contextuales"
+		}
+		fmt.Fprintf(out, "    · %s — %s\n", s, use)
+	}
+	fmt.Fprintln(out, "  Herramientas (binarios en tu PATH):")
+	for _, d := range pm.Deps() {
+		if !isInstalled(d.Bin) {
+			continue
+		}
+		use := toolUse[d.Bin]
+		if use == "" {
+			use = d.Name
+		}
+		fmt.Fprintf(out, "    · %s — %s\n", d.Bin, use)
 	}
 	fmt.Fprintln(out)
 
@@ -149,7 +239,7 @@ func runSetup(args []string) error {
 	if len(pending) == 0 {
 		fmt.Fprintln(out, ui.Verdict(true, "READY — restart your IDE and work"))
 	} else {
-		fmt.Fprintln(out, ui.Section("Still unpack manually"))
+		fmt.Fprintln(out, ui.Section("Pendiente manual"))
 		for i, p := range pending {
 			fmt.Fprintf(out, "  %d. %s\n", i+1, p)
 		}
