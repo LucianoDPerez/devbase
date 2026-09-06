@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/devbase/devbase/internal/gate"
+	"github.com/devbase/devbase/internal/ui"
 )
 
 func runGate(args []string) error {
@@ -21,12 +22,20 @@ func runGate(args []string) error {
 		return err
 	}
 	rep := gate.Run(*dir)
-	fmt.Fprintf(os.Stdout, "sha: %s\n", rep.SHA)
+	fmt.Fprintln(os.Stdout, ui.Section("Evidence @ "+rep.SHA))
 	for _, r := range rep.Results {
-		fmt.Fprintf(os.Stdout, "%-12s %-6s %s\n", r.Name, r.Status, firstLine(r.Detail))
+		switch r.Status {
+		case gate.Fail:
+			fmt.Fprintln(os.Stdout, ui.Fail(r.Name, firstLine(r.Detail)))
+		case gate.Skip:
+			fmt.Fprintln(os.Stdout, ui.Warn(r.Name, firstLine(r.Detail)))
+		default:
+			fmt.Fprintln(os.Stdout, ui.Ok(r.Name, firstLine(r.Detail)))
+		}
 	}
+	fmt.Fprintln(os.Stdout)
 	verdict := rep.Verdict()
-	fmt.Fprintf(os.Stdout, "verdict: %s\n", verdict)
+	fmt.Fprintln(os.Stdout, ui.Verdict(verdict == gate.Pass, rep.SHA))
 	if verdict == gate.Fail {
 		os.Exit(1)
 	}
