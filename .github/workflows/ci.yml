@@ -90,5 +90,5 @@ jobs:
           $env:DEVBIN = "$env:RUNNER_TEMP\bin"
           irm https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.ps1 | iex
         shell: powershell
-      - run: & "$env:RUNNER_TEMP\bin\devbase.exe" doctor
+      - run: '& "$env:RUNNER_TEMP\bin\devbase.exe" doctor'
         shell: powershell
