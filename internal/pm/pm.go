@@ -90,12 +90,15 @@ func Deps() []Dep {
 			}
 			return nil
 		}},
-		{Name: "Node.js (for npx-based MCP servers)", Bin: "node", Manual: "https://nodejs.org", Recipe: func(info Info) []string {
+		{Name: "Node.js (for npx-based MCP servers)", Bin: "node", Manual: "https://nodejs.org/en/download (or fnm)", Recipe: func(info Info) []string {
 			switch info.PM {
 			case "brew":
 				return []string{"brew", "install", "node"}
 			case "apt":
-				return []string{"sudo", "apt", "install", "-y", "nodejs", "npm"}
+				// Deliberately no recipe: distro nodejs (e.g. v12 on Ubuntu
+				// LTS) silently breaks npx-based MCP servers. Manual install
+				// of a current LTS is the honest path here.
+				return nil
 			case "dnf":
 				return []string{"sudo", "dnf", "install", "-y", "nodejs", "npm"}
 			case "pacman":
