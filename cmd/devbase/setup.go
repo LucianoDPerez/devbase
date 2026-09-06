@@ -96,7 +96,7 @@ func runSetup(args []string) error {
 	}
 
 	// 0. Catalog checklist: everything on by default, space toggles.
-	catalog := buildCatalog(info, allStacks)
+	catalog := buildCatalog(info, *dir, allStacks)
 	if !*yes {
 		var err error
 		catalog, err = tui.Select("DevBase — elegí tu arsenal (todo viene activado)", catalog)
@@ -151,6 +151,11 @@ func runSetup(args []string) error {
 		if isInstalled(d.Bin) {
 			fmt.Fprintln(out, ui.Ok(d.Name, "ready"))
 		}
+	}
+	// 1b. Playwright installs only for browser frontends, only when selected.
+	playwrightE2E := false
+	if sel["tool:playwright"] && !*skipInstall && detect.WebFrontend(*dir) {
+		playwrightE2E = installPlaywright(*dir, out, addPending)
 	}
 	if _, err := exec.LookPath("gh"); err == nil {
 		if err := exec.Command("gh", "auth", "status").Run(); err != nil {
@@ -306,6 +311,9 @@ func runSetup(args []string) error {
 		}
 		fmt.Fprintf(out, "    · %s — %s\n", d.Bin, use)
 	}
+	if playwrightE2E {
+		fmt.Fprintln(out, "    · playwright — navegador E2E (chromium instalado)")
+	}
 	fmt.Fprintln(out)
 
 	if os.Getenv("CONTEXT7_API_KEY") == "" {
@@ -360,6 +368,62 @@ func targetsFromSelection(all []adapters.IDE, sel map[string]bool) []adapters.ID
 func isInstalled(bin string) bool {
 	_, err := exec.LookPath(bin)
 	return err == nil
+}
+
+// jsManager picks the JS package manager from lockfiles, or "" when the
+// directory is not a JS project root.
+func jsManager(dir string) string {
+	has := func(n string) bool {
+		_, err := os.Stat(filepath.Join(dir, n))
+		return err == nil
+	}
+	switch {
+	case has("pnpm-lock.yaml"):
+		return "pnpm"
+	case has("yarn.lock"):
+		return "yarn"
+	case has("package.json"):
+		return "npm"
+	}
+	return ""
+}
+
+// installPlaywright adds @playwright/test and the chromium browser. Specs stay
+// the dev's job: the gate picks them up automatically once a playwright.config
+// exists. Literal dispatch keeps every binary auditable.
+func installPlaywright(dir string, out *os.File, addPending func(string)) bool {
+	mgr := jsManager(dir)
+	if mgr == "" {
+		fmt.Fprintln(out, ui.Warn("Playwright", "no package.json — manual: npm init playwright@latest"))
+		addPending("Playwright: no JS root found here; run npm init playwright@latest in the frontend dir")
+		return false
+	}
+	var add *exec.Cmd
+	switch mgr {
+	case "pnpm":
+		add = exec.Command("pnpm", "add", "-D", "@playwright/test")
+	case "yarn":
+		add = exec.Command("yarn", "add", "-D", "@playwright/test")
+	default:
+		add = exec.Command("npm", "install", "-D", "@playwright/test")
+	}
+	add.Dir = dir
+	add.Stdout, add.Stderr, add.Stdin = out, os.Stderr, os.Stdin
+	if err := add.Run(); err != nil {
+		fmt.Fprintln(out, ui.Fail("Playwright", "dep install failed"))
+		addPending("Playwright: dep install failed, run manually in " + dir)
+		return false
+	}
+	browsers := exec.Command("npx", "playwright", "install", "chromium")
+	browsers.Dir = dir
+	browsers.Stdout, browsers.Stderr, browsers.Stdin = out, os.Stderr, os.Stdin
+	if err := browsers.Run(); err != nil {
+		fmt.Fprintln(out, ui.Warn("Playwright", "browsers need system deps — run: npx playwright install --with-deps"))
+		addPending("Playwright browsers: npx playwright install --with-deps")
+		return false
+	}
+	fmt.Fprintln(out, ui.Ok("Playwright", "dep + chromium ready (write specs, gate runs them)"))
+	return true
 }
 
 const gitignoreMarker = "# devbase:managed (solo uso local)"
@@ -417,7 +481,7 @@ var mcpCatalogUse = map[string]string{
 
 // buildCatalog assembles the interactive catalog: MCPs, rules for the detected
 // stacks, starter skills, and dependency tools. Everything defaults on.
-func buildCatalog(info pm.Info, stacks []string) []tui.Entry {
+func buildCatalog(info pm.Info, dir string, stacks []string) []tui.Entry {
 	var out []tui.Entry
 	add := func(group, id, name, use string) {
 		out = append(out, tui.Entry{Group: group, ID: id, Name: name, Use: use, On: true})
@@ -454,6 +518,12 @@ func buildCatalog(info pm.Info, stacks []string) []tui.Entry {
 		}
 		e := tui.Entry{Group: "Herramientas", ID: "tool:" + d.Bin, Name: d.Name, Use: use, Note: note, On: true}
 		out = append(out, e)
+	}
+	if detect.WebFrontend(dir) {
+		out = append(out, tui.Entry{
+			Group: "E2E", ID: "tool:playwright", Name: "Playwright",
+			Use: "browsers + dep E2E (los specs los escribís vos)", On: true,
+		})
 	}
 	out = append(out, tui.Entry{
 		Group: "Opciones", ID: "opt:gitignore", Name: "solo uso local",

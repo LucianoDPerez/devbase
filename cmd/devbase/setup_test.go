@@ -13,7 +13,7 @@ import (
 // The catalog must cover every installable tool and default everything on,
 // except local-only mode (sharing rules with the team stays the default).
 func TestBuildCatalogComplete(t *testing.T) {
-	cat := buildCatalog(pm.Detect(), []string{"core", "js", "security"})
+	cat := buildCatalog(pm.Detect(), t.TempDir(), []string{"core", "js", "security"})
 	seen := map[string]bool{}
 	for _, e := range cat {
 		seen[e.ID] = true
@@ -51,6 +51,33 @@ func TestStripFrontmatter(t *testing.T) {
 	plain := "# Title\n\nbody\n"
 	if got := stripFrontmatter(plain); got != plain {
 		t.Errorf("plain body altered: %q", got)
+	}
+}
+
+// jsManager resolves the package manager from lockfiles.
+func TestJsManager(t *testing.T) {
+	cases := []struct {
+		name  string
+		files []string
+		want  string
+	}{
+		{"pnpm", []string{"package.json", "pnpm-lock.yaml"}, "pnpm"},
+		{"yarn", []string{"package.json", "yarn.lock"}, "yarn"},
+		{"npm", []string{"package.json"}, "npm"},
+		{"none", []string{}, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, f := range tc.files {
+				if err := os.WriteFile(filepath.Join(dir, f), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if got := jsManager(dir); got != tc.want {
+				t.Errorf("jsManager() = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }
 
