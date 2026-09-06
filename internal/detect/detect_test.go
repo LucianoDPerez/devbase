@@ -66,3 +66,35 @@ func TestDetectMatrix(t *testing.T) {
 		})
 	}
 }
+
+// Playwright needs a browser UI: frontend frameworks count, backend-only
+// Node and empty dirs don't.
+func TestWebFrontend(t *testing.T) {
+	cases := []struct {
+		name  string
+		files map[string]string // rel path -> content
+		want  bool
+	}{
+		{"react-subdir", map[string]string{"frontend/package.json": `{"dependencies":{"react":"19"}}`}, true},
+		{"vite-config", map[string]string{"web/package.json": `{"name":"x"}`, "web/vite.config.ts": `export default {}`}, true},
+		{"express-only", map[string]string{"package.json": `{"dependencies":{"express":"4"}}`}, false},
+		{"empty", map[string]string{}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for name, content := range tc.files {
+				p := filepath.Join(dir, filepath.FromSlash(name))
+				if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if got := WebFrontend(dir); got != tc.want {
+				t.Errorf("WebFrontend() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

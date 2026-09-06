@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/devbase/devbase/internal/detect"
 	"github.com/devbase/devbase/internal/mcpmerge"
 	"github.com/devbase/devbase/internal/pm"
 )
@@ -60,6 +61,14 @@ func runSetup(args []string) error {
 		if err := exec.Command("gh", "auth", "status").Run(); err != nil {
 			fmt.Fprintln(os.Stdout, "gh found but not authenticated — run: gh auth login")
 		}
+	}
+
+	// 1b. Playwright is conditional: suggest it for browser UIs, never install
+	// browsers uninvited (hundreds of MB + system deps).
+	if detect.WebFrontend(*dir) {
+		fmt.Fprintln(os.Stdout, "web frontend detected — Playwright E2E applies to this project.")
+		fmt.Fprintln(os.Stdout, "  gate runs specs automatically once a playwright.config exists.")
+		fmt.Fprintln(os.Stdout, "  to add it: npm init playwright@latest && npx playwright install --with-deps")
 	}
 
 	// 2. Rules.
