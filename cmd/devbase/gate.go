@@ -15,8 +15,8 @@ func runGate(args []string) error {
 	fs := flag.NewFlagSet("gate", flag.ContinueOnError)
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage: devbase gate [--dir PATH] [--json]")
-		fmt.Fprintln(os.Stderr, "  Deterministic checks (build per stack + Semgrep ERROR-only) pinned")
-		fmt.Fprintln(os.Stderr, "  to commit + working-tree hash. Prints VERIFIED/BLOCKED/INCOMPLETE,")
+		fmt.Fprintln(os.Stderr, "  Deterministic checks (project test suite, build, Semgrep ERROR-only)")
+		fmt.Fprintln(os.Stderr, "  pinned to commit + working-tree hash. Prints VERIFIED/BLOCKED/INCOMPLETE,")
 		fmt.Fprintln(os.Stderr, "  exits 0/1/2. --json emits the devbase.evidence.v1 envelope.")
 		fs.PrintDefaults()
 	}

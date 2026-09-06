@@ -76,6 +76,41 @@ func TestWorkingTreeDirty(t *testing.T) {
 	}
 }
 
+// A green Go suite must PASS with the suite evidence attached.
+func TestRunGreenGo(t *testing.T) {
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "go.mod"), "module green\n\ngo 1.25\n")
+	mustWrite(t, filepath.Join(dir, "add.go"), "package main\n\nfunc Add(a, b int) int { return a + b }\nfunc main() {}\n")
+	mustWrite(t, filepath.Join(dir, "add_test.go"),
+		"package main\nimport \"testing\"\nfunc TestAdd(t *testing.T) { if 1+1 != 2 { t.Fail() } }\n")
+	rep := Run(dir)
+	if rep.Verdict() != Pass {
+		t.Errorf("green go suite verdict = %v, want PASS", rep.Verdict())
+	}
+	found := false
+	for _, r := range rep.Results {
+		if r.Name == "go test" && r.Status == Pass && r.Required {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("missing required go test PASS in %+v", rep.Results)
+	}
+}
+
+// A red Go suite must BLOCK.
+func TestRunRedGo(t *testing.T) {
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "go.mod"), "module red\n\ngo 1.25\n")
+	mustWrite(t, filepath.Join(dir, "add.go"), "package main\n\nfunc Add(a, b int) int { return a + b }\nfunc main() {}\n")
+	mustWrite(t, filepath.Join(dir, "add_test.go"),
+		"package main\nimport \"testing\"\nfunc TestAdd(t *testing.T) { t.Fatal(\"broken\") }\n")
+	rep := Run(dir)
+	if rep.Verdict() != Fail {
+		t.Errorf("red go suite verdict = %v, want FAIL", rep.Verdict())
+	}
+}
+
 // A broken Go module must BLOCK with evidence attached.
 func TestRunBrokenGo(t *testing.T) {
 	dir := t.TempDir()

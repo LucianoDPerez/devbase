@@ -17,7 +17,7 @@ Cada dev pierde días en lo mismo: buscar qué MCPs instalar, copiar reglas suel
 1. **Instala** lo que falta según tu sistema (brew/apt/dnf/pacman/winget): `gh`, Node, Semgrep, Engram, codebase-memory — o te dice exactamente dónde conseguirlo si no hay receta automática.
 2. **Detecta tu stack** (PHP/Laravel, React/Next, Python/Django, Go, Rust, Ruby, Java, C#, Kotlin, Swift, Flutter y más) y escribe solo las reglas que aplican, en el formato nativo de cada IDE.
 3. **Configura tus IDEs** (OpenCode, Claude Code, Cursor, VS Code + Copilot, Windsurf, Codex): MCPs, reglas y skills, con backup de todo lo previo.
-4. **Verifica con evidencia**: el gate corre build, tests estáticos, Semgrep y E2E, y emite `VERIFIED`, `BLOCKED` o `INCOMPLETE` — nunca un "creo que está bien".
+4. **Verifica con evidencia**: el gate corre la suite de tests del proyecto (`go test`, `npm test`, `pytest`, PHPUnit, `cargo test`…), build, análisis estático, Semgrep y E2E cuando hay specs — y emite `VERIFIED`, `BLOCKED` o `INCOMPLETE`, nunca un "creo que está bien".
 
 ![Instalación en una línea](docs/images/install.png)
 
