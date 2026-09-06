@@ -228,9 +228,7 @@ func runSetup(args []string) error {
 			switch {
 			case err != nil:
 				fmt.Fprintln(out, ui.Warn(ide.Name, err.Error()))
-				if ide.Name == "codex" {
-					addPending("Codex: add the context7 server to " + cfg + " manually (TOML)")
-				}
+				addPending(ide.Name + ": " + err.Error())
 			case changed:
 				fmt.Fprintln(out, ui.Ok(ide.Name, "context7 added"))
 				mcpActive["context7"] = true

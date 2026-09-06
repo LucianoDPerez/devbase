@@ -16,7 +16,7 @@ import (
 // overwritten. A .pre-devbase.bak backup is written on first modification.
 func EnsureEntry(path, topKey, name string, entry map[string]any) (bool, error) {
 	if strings.HasSuffix(path, ".toml") {
-		return false, fmt.Errorf("TOML configs need a manual step: %s", path)
+		return EnsureTomlEntry(path, name, entry)
 	}
 	data, err := os.ReadFile(path)
 	cfg := map[string]any{}
@@ -48,4 +48,51 @@ func EnsureEntry(path, topKey, name string, entry map[string]any) (bool, error) 
 	}
 	out, _ := json.MarshalIndent(cfg, "", "  ")
 	return true, os.WriteFile(path, append(out, '\n'), 0o644)
+}
+
+// EnsureTomlEntry appends a [mcp_servers.<name>] table for Codex-style TOML
+// configs (verified against `engram setup codex` output). Existing tables are
+// never touched. Backup policy mirrors the JSON path.
+func EnsureTomlEntry(path, name string, entry map[string]any) (bool, error) {
+	command, _ := entry["command"].(string)
+	if command == "" {
+		return false, fmt.Errorf("toml entry needs a command: %s", path)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
+		return false, err
+	}
+	body := string(data)
+	header := "[mcp_servers." + name + "]"
+	for _, line := range strings.Split(body, "\n") {
+		if strings.TrimSpace(line) == header {
+			return false, nil
+		}
+	}
+	if len(data) > 0 {
+		if err := os.WriteFile(path+".pre-devbase.bak", data, 0o644); err != nil {
+			return false, err
+		}
+	} else if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return false, err
+	}
+	var b strings.Builder
+	b.WriteString(body)
+	if body != "" && !strings.HasSuffix(body, "\n") {
+		b.WriteString("\n")
+	}
+	b.WriteString("\n" + header + "\n")
+	b.WriteString(fmt.Sprintf("command = %q\n", command))
+	if args, ok := entry["args"].([]any); ok {
+		quoted := make([]string, 0, len(args))
+		for _, a := range args {
+			s, ok := a.(string)
+			if !ok {
+				return false, fmt.Errorf("toml args must be strings: %s", path)
+			}
+			quoted = append(quoted, fmt.Sprintf("%q", s))
+		}
+		b.WriteString("args = [" + strings.Join(quoted, ", ") + "]\n")
+	}
+	return true, os.WriteFile(path, []byte(b.String()), 0o644)
 }
