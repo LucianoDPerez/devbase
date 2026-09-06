@@ -64,9 +64,11 @@ Ninguna es obligatoria. `CONTEXT7_API_KEY` sube los límites de Context7 (gratis
 
 ## Estado y roadmap
 
-`v0.11.x`: setup interactivo, 25 packs de reglas, gate estricto con evidencia JSON, instaladores con checksum, CI con tests + Semgrep.
+`v0.12.x`: setup interactivo, 25 packs de reglas, gate estricto con evidencia JSON (suites del proyecto + build + Semgrep + E2E condicional), instaladores con checksum, CI con tests + Semgrep.
 
-Siguiente: profiles de verificación por stack (PHPUnit/PHPStan/Pint, pytest/ruff, cargo clippy…), tests del proyecto dentro del gate, adapters Cline/Roo/Kilo/Continue.
+VERIFIED significa: los checks definidos pasaron en este snapshot exacto (commit + working tree + toolchain registrados). No significa "correcto" — significa probado y reproducible.
+
+Siguiente: profiles de verificación por stack (PHPStan/Pint, ESLint, ruff/mypy, clippy…), adapters Cline/Roo/Kilo/Continue.
 
 ## Contribuir
 
