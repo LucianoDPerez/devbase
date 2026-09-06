@@ -1,0 +1,13 @@
+# Binaries
+/devbase
+/dist/
+
+# Go
+*.test
+*.out
+
+# OS
+.DS_Store
+
+# Local dev
+.devbase.local/
