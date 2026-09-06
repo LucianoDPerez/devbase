@@ -1,143 +1,73 @@
 # DevBase
 
-Estándar operativo para agentes de desarrollo: **contexto + memoria + buenas prácticas + ejecución + verificación + evidencia.**
+**Un solo comando que deja a cualquier dev con el arsenal completo: herramientas probadas, reglas contextuales y verificación con evidencia — en su SO y su IDE.**
 
-DevBase no es "otro pack de MCPs". Es el CLI que deja cualquier repo listo para trabajar con agentes (OpenCode, Claude Code, Cursor, VS Code + Copilot, Windsurf, Codex): detecta tu stack, carga solo las reglas que aplican, conecta los IDEs que tengas instalados y verifica con evidencia reproducible.
-
-```
-AGENT
-  ├── Context7 · Codebase Memory · Engram · Skills + Rules
-  ▼
-CODING
-  ▼
-VERIFICATION (tests · lint · build · Semgrep · Playwright)
-  ▼
-EVIDENCE GATE ──► VERIFIED ✅ / BLOCKED ❌
+```bash
+curl -fsSL https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.sh | bash
+cd tu-proyecto
+devbase setup --dir .
 ```
 
-## Estado
+## El problema
 
-`v0.2.0`: `doctor`, `init` (+`--wire`) y `gate` funcionales.
+Cada dev pierde días en lo mismo: buscar qué MCPs instalar, copiar reglas sueltas de internet, pelearse con configs distintas por IDE (Cursor usa una clave, VS Code otra, Codex TOML), y encima el agente alucina APIs y declara "listo" sin pruebas. DevBase ataca las tres cosas de raíz.
 
-## Requisitos
+## Qué hace por vos
 
-- Git (siempre), `gh` (integración GitHub vía CLI + skill, no MCP)
-- Opcional según el proyecto: `engram`, `codebase-memory-mcp`, `semgrep`
+1. **Instala** lo que falta según tu sistema (brew/apt/dnf/pacman/winget): `gh`, Node, Semgrep, Engram, codebase-memory — o te dice exactamente dónde conseguirlo si no hay receta automática.
+2. **Detecta tu stack** (PHP/Laravel, React/Next, Python/Django, Go, Rust, Ruby, Java, C#, Kotlin, Swift, Flutter y más) y escribe solo las reglas que aplican, en el formato nativo de cada IDE.
+3. **Configura tus IDEs** (OpenCode, Claude Code, Cursor, VS Code + Copilot, Windsurf, Codex): MCPs, reglas y skills, con backup de todo lo previo.
+4. **Verifica con evidencia**: el gate corre build, tests estáticos, Semgrep y E2E, y emite `VERIFIED`, `BLOCKED` o `INCOMPLETE` — nunca un "creo que está bien".
 
-## Instalación
+![Instalación en una línea](docs/images/install.png)
+
+## El catálogo
+
+Al correr `setup` elegís de un catálogo curado — todo activado por default, espacio para quitar:
+
+![Checklist interactivo](docs/images/devbase-setup.png)
+
+Al final, el reporte te dice qué hace cada pieza:
+
+![Reporte final](docs/images/finish-setup.png)
+
+## Casos de uso
+
+- **Onboarding en 5 minutos**: clonás un repo, corrés `setup`, y tu agente ya conoce el stack, las convenciones y la memoria del proyecto.
+- **Pre-commit real**: `devbase gate --dir .` bloquea si hay un error de tipos, un hallazgo de seguridad o tests rotos — con la evidencia exacta.
+- **Equipos**: las reglas viven en el repo (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules`…), así todos los agentes trabajan igual. O activá *solo uso local* y nada se sube a git.
+- **CI**: `devbase gate --json` emite el envelope `devbase.evidence.v1` (commit + working-tree hash + toolchain + checks) para PRs y pipelines.
+
+## Instalación y uso
 
 ```bash
 # macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.sh | bash
-```
 
-```powershell
 # Windows (PowerShell)
 irm https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.ps1 | iex
 ```
 
 Verifican SHA-256 contra `checksums.txt` del release. Desde fuente: `go build -o devbase ./cmd/devbase` (Go 1.25+).
 
-## Uso
-
 ```bash
-# Bootstrap completo: checklist interactivo (MCPs, reglas, skills, herramientas),
-# instala dependencias, escribe reglas, configura IDEs
-devbase setup --dir /ruta/al/proyecto
-
-# Aceptar el catálogo completo sin preguntas (CI, scripts)
-devbase setup --dir /ruta/al/proyecto --yes
-
-# Solo reglas + wiring (sin instalar nada)
-devbase setup --dir /ruta/al/proyecto --skip-install
-
-# Solo ciertos IDEs
-devbase setup --dir /ruta/al/proyecto --ides cursor,vscode-copilot
-```
-
-Comandos por separado:
-
-```bash
-# Qué IDEs tenés configurados y qué dependencias faltan (no escribe nada)
-devbase doctor
-
-# Detectar stack y escribir reglas contextuales en .devbase/
-devbase init --dir /ruta/al/proyecto
-
-# Además ejecuta el setup de herramientas externas en los IDEs detectados
-devbase init --dir /ruta/al/proyecto --wire
-
-# Renderizar solo para ciertos IDEs (default: detectados; también: all)
-devbase init --dir /ruta/al/proyecto --ides cursor,vscode-copilot
-
-# Verificación con evidencia: build por stack + Semgrep ERROR-only.
-# VERIFIED solo si todo lo requerido pasa; INCOMPLETE si algo requerido se salteó.
-devbase gate --dir /ruta/al/proyecto
-
-# Sobre develop: devbase gate --json  → envelope devbase.evidence.v1
-# (commit + working-tree hash + toolchain + checks con comando, exit code y duración)
-# Guarda artifact en .devbase/evidence/latest.json — exit 0/1/2 = VERIFIED/BLOCKED/INCOMPLETE
-```
-
-Ejemplo real:
-
-```
-$ devbase doctor
-IDEs:
-  opencode       ✓ config found
-  claude-code    ✓ config found
-  cursor         ✓ config found
-  vscode-copilot ✗ not detected
-  windsurf       ✗ not detected
-  codex          ✓ config found
-Dependencies:
-  ✓ git
-  ✓ gh
-  ✓ engram
-  ✓ codebase-memory-mcp
-  ✗ semgrep              missing
+cd tu-proyecto
+devbase setup --dir .              # bootstrap completo e interactivo
+devbase setup --dir . --yes        # sin preguntas (CI, scripts)
+devbase doctor                     # diagnóstico de solo lectura
+devbase gate --dir .               # VERIFIED / BLOCKED / INCOMPLETE (exit 0/1/2)
 ```
 
 ## API keys opcionales
 
-Ninguna es obligatoria para arrancar:
+Ninguna es obligatoria. `CONTEXT7_API_KEY` sube los límites de Context7 (gratis en https://context7.com/dashboard). `devbase doctor` te avisa si falta.
 
-| Key | Para qué | Dónde conseguirla |
-|---|---|---|
-| `CONTEXT7_API_KEY` | Context7 con límites básicos funciona sin key; la key gratis sube el límite | https://context7.com/dashboard |
+## Estado y roadmap
 
-`devbase doctor` te avisa si falta.
+`v0.11.x`: setup interactivo, 25 packs de reglas, gate estricto con evidencia JSON, instaladores con checksum, CI con tests + Semgrep.
 
-## Cómo ahorra tokens
+Siguiente: profiles de verificación por stack (PHPUnit/PHPStan/Pint, pytest/ruff, cargo clippy…), tests del proyecto dentro del gate, adapters Cline/Roo/Kilo/Continue.
 
-DevBase nunca carga "todas las reglas". Carga por niveles (metadata → skill → referencias, solo lo activado) y por stack detectado (un proyecto Laravel no recibe reglas de React). Medido en la industria: 60–96% menos tokens por sesión según el tipo de tarea.
+## Contribuir
 
-## Stacks soportados
-
-`core` + `security` siempre. Detección por markers y dependencias:
-
-| Stack | Detecta por |
-|---|---|
-| `php`, `php/laravel` | `composer.json`, `artisan` + `laravel/framework` |
-| `js`, `js/react`, `js/nextjs` | `package.json`, `tsconfig.json` + deps |
-| `python`, `python/django` | `requirements.txt`, `pyproject.toml` + `django` |
-| `go` | `go.mod` |
-| `rust` | `Cargo.toml` |
-| `ruby`, `ruby/rails` | `Gemfile` + `rails` |
-| `csharp` | `*.csproj`, `*.sln` |
-| `c` / `cpp` | `CMakeLists.txt` (+ presencia de `*.cpp`) |
-| `java`, `java/spring`, `kotlin` | `pom.xml`, `build.gradle(.kts)` |
-| `swift` | `Package.swift`, `*.xcodeproj` |
-| `flutter` | `pubspec.yaml` |
-| `sql` | `*.sql` |
-
-## Roadmap
-
-- [x] `doctor`: detección de IDEs + dependencias
-- [x] Detección de stack (`core → php/js/go/python → security`)
-- [x] `init`: reglas contextuales en `.devbase/` + `--wire` (setup externo por IDE)
-- [x] `gate`: VERIFIED / BLOCKED con SHA exacto (build + Semgrep ERROR-only)
-- [x] Playwright condicional: sugerido en frontends, corre solo con `playwright.config`
-- [x] Instalador `install.sh` / `install.ps1` + releases con checksums
-- [ ] Adapters fase 2: Cline, Roo Code, Kilo Code, Continue.dev
-- [ ] `gate`: tests del proyecto + PHPStan/ESLint por stack
+Ver [CONTRIBUTING.md](CONTRIBUTING.md). Commits convencionales, sin atribución IA. Reportes de seguridad por GitHub Security Advisories ([SECURITY.md](SECURITY.md)).
