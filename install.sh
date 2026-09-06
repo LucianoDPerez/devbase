@@ -20,7 +20,10 @@ case "$os" in
 esac
 
 if [ "$VERSION" = "latest" ]; then
-  VERSION="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | cut -d'"' -f4)"
+  # No GitHub API (rate-limited anonymously): follow the /releases/latest
+  # redirect, which ends in .../tag/vX.Y.Z.
+  final="$(curl -fsSL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest")"
+  VERSION="$(basename "$final")"
 fi
 [ -n "$VERSION" ] || { echo "could not resolve version" >&2; exit 1; }
 

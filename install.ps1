@@ -7,7 +7,10 @@ $Version = if ($env:DEVBASE_VERSION) { $env:DEVBASE_VERSION } else { "latest" }
 $BinDir = if ($env:DEVBIN) { $env:DEVBIN } else { "$env:USERPROFILE\.local\bin" }
 
 if ($Version -eq "latest") {
-  $Version = (Invoke-RestMethod "https://api.github.com/repos/$Repo/releases/latest").tag_name
+  # No GitHub API (rate-limited anonymously): follow the /releases/latest
+  # redirect, which ends in .../tag/vX.Y.Z.
+  $final = (Invoke-WebRequest "https://github.com/$Repo/releases/latest" -UseBasicParsing).BaseResponse.ResponseUri.ToString()
+  $Version = ($final -split '/tag/')[-1]
 }
 if (-not $Version) { throw "could not resolve version" }
 
