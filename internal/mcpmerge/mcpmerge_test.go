@@ -53,11 +53,36 @@ func TestEnsureEntryPreservesAndBacksUp(t *testing.T) {
 	}
 }
 
+func TestEnsureTomlEntry(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	orig := "[mcp_servers]\n\n[mcp_servers.engram]\ncommand = \"engram\"\n"
+	if err := os.WriteFile(path, []byte(orig), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	entry := map[string]any{"command": "npx", "args": []any{"-y", "@upstash/context7-mcp@4.0.5"}}
+	changed, err := EnsureEntry(path, "mcp_servers", "context7", entry)
+	if err != nil || !changed {
+		t.Fatalf("changed=%v err=%v", changed, err)
+	}
+	data, _ := os.ReadFile(path)
+	body := string(data)
+	for _, want := range []string{`[mcp_servers.engram]`, `[mcp_servers.context7]`, `command = "npx"`, `"@upstash/context7-mcp@4.0.5"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("toml missing %q:\n%s", want, body)
+		}
+	}
+	changed, err = EnsureEntry(path, "mcp_servers", "context7", entry)
+	if err != nil || changed {
+		t.Fatalf("second call: changed=%v err=%v (must be idempotent)", changed, err)
+	}
+	if _, err := os.Stat(path + ".pre-devbase.bak"); err != nil {
+		t.Error("expected backup of pre-existing toml")
+	}
+}
+
 func TestEnsureEntryRefusals(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := EnsureEntry(filepath.Join(dir, "c.toml"), "x", "y", map[string]any{}); err == nil {
-		t.Error("TOML must be refused")
-	}
 	bad := filepath.Join(dir, "bad.json")
 	_ = os.WriteFile(bad, []byte("{nope"), 0o644)
 	if _, err := EnsureEntry(bad, "x", "y", map[string]any{}); err == nil {

@@ -57,6 +57,22 @@ func TestPlaywrightCheckSkip(t *testing.T) {
 	}
 }
 
+// A missing toolchain is INCOMPLETE (cannot verify), never a false FAIL.
+func TestMissingToolchainIncomplete(t *testing.T) {
+	t.Setenv("PATH", t.TempDir()) // hide every binary: no go, git, semgrep…
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "go.mod"), "module x\n\ngo 1.25\n")
+	rep := Run(dir)
+	if rep.Verdict() != Incomplete {
+		t.Errorf("no-toolchain verdict = %v, want INCOMPLETE", rep.Verdict())
+	}
+	for _, r := range rep.Results {
+		if r.Status == Fail {
+			t.Errorf("no-toolchain produced FAIL: %+v", r)
+		}
+	}
+}
+
 // A dirty tree hashes differently from clean and flags dirty.
 func TestWorkingTreeDirty(t *testing.T) {
 	dir := t.TempDir()

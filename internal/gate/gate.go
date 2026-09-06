@@ -272,6 +272,9 @@ func firstLine(s string) string {
 func buildChecks(dir string) []Result {
 	switch {
 	case has(dir, "go.mod"):
+		if r := needBin("go", "go build"); r != nil {
+			return []Result{*r}
+		}
 		var out []Result
 		o := goOut(dir, "build", "./...")
 		rb := o.result("go build", true)
@@ -290,6 +293,9 @@ func buildChecks(dir string) []Result {
 		}
 		return append(out, rv)
 	case has(dir, "package.json"):
+		if r := needBin("npm", "npm build"); r != nil {
+			return []Result{*r}
+		}
 		data, err := os.ReadFile(filepath.Join(dir, "package.json"))
 		if err != nil || !strings.Contains(string(data), `"build"`) {
 			return []Result{{Name: "npm build", Status: Skip, Detail: "no build script", Required: true}}
@@ -306,6 +312,9 @@ func buildChecks(dir string) []Result {
 		files := changedPy(dir)
 		if len(files) == 0 {
 			return []Result{{Name: "py_compile", Status: Skip, Detail: "no python files changed", Required: true}}
+		}
+		if r := needBin("python3", "py_compile"); r != nil {
+			return []Result{*r}
 		}
 		args := append([]string{"-m", "py_compile"}, files...)
 		o := pythonOut(dir, args...)
@@ -359,6 +368,9 @@ func playwrightCheck(dir string) Result {
 	if e2eDir == "" {
 		return Result{Name: "playwright", Status: Skip, Detail: "no playwright.config found", Required: false}
 	}
+	if _, err := exec.LookPath("npx"); err != nil {
+		return Result{Name: "playwright", Status: Skip, Detail: "npx not installed", Required: false}
+	}
 	o := npxOutTimeout(e2eTimeout, e2eDir, "playwright", "test", "--reporter=line")
 	r := o.result("playwright", false)
 	switch {
@@ -372,6 +384,15 @@ func playwrightCheck(dir string) Result {
 	return r
 }
 
+// needBin returns a required SKIP when the toolchain binary is absent: a
+// missing toolchain means "cannot verify" (INCOMPLETE), never a false FAIL.
+func needBin(name, check string) *Result {
+	if lookPath(name) {
+		return nil
+	}
+	return &Result{Name: check, Status: Skip, Detail: name + " not installed", Required: true}
+}
+
 func hasConfig(base string) bool {
 	m, _ := filepath.Glob(filepath.Join(base, "playwright.config.*"))
 	return len(m) > 0
@@ -383,15 +404,24 @@ func hasConfig(base string) bool {
 func testChecks(dir string) []Result {
 	switch {
 	case has(dir, "go.mod"):
+		if r := needBin("go", "go test"); r != nil {
+			return []Result{*r}
+		}
 		o := doRunTimeout(testTimeout, dir, "go", exec.Command("go", "test", "./..."), []string{"test", "./..."})
 		return []Result{finalize(o, "go test", true)}
 	case has(dir, "package.json"):
+		if r := needBin("npm", "npm test"); r != nil {
+			return []Result{*r}
+		}
 		if !npmHasScript(dir, "test") {
 			return []Result{{Name: "npm test", Status: Skip, Detail: "no test script", Required: false}}
 		}
 		o := npmOutCI(dir, "run", "-s", "test")
 		return []Result{finalize(o, "npm test", true)}
 	case has(dir, "composer.json"):
+		if r := needBin("php", "phpunit"); r != nil {
+			return []Result{*r}
+		}
 		bin := phpTestBinary(dir)
 		if bin == "" {
 			if phpSuiteFiles(dir) {
@@ -402,6 +432,9 @@ func testChecks(dir string) []Result {
 		o := doRunTimeout(testTimeout, dir, "php", exec.Command("php", bin), []string{bin})
 		return []Result{finalize(o, "phpunit", true)}
 	case has(dir, "requirements.txt"), has(dir, "pyproject.toml"):
+		if r := needBin("python3", "pytest"); r != nil {
+			return []Result{*r}
+		}
 		if !pySuite(dir) {
 			return []Result{{Name: "pytest", Status: Skip, Detail: "no test suite detected", Required: false}}
 		}
@@ -411,9 +444,15 @@ func testChecks(dir string) []Result {
 		o := doRunTimeout(testTimeout, dir, "python3", exec.Command("python3", "-m", "pytest", "-q"), []string{"-m", "pytest", "-q"})
 		return []Result{finalize(o, "pytest", true)}
 	case has(dir, "Cargo.toml"):
+		if r := needBin("cargo", "cargo test"); r != nil {
+			return []Result{*r}
+		}
 		o := doRunTimeout(testTimeout, dir, "cargo", exec.Command("cargo", "test", "--quiet"), []string{"test", "--quiet"})
 		return []Result{finalize(o, "cargo test", true)}
 	case has(dir, "pom.xml"), has(dir, "build.gradle"), has(dir, "build.gradle.kts"):
+		if r := needBin("java", "java test"); r != nil {
+			return []Result{*r}
+		}
 		bin, args := javaTestRunner(dir)
 		var o outcome
 		switch bin {
@@ -433,9 +472,15 @@ func testChecks(dir string) []Result {
 		if !has(dir, "spec") {
 			return []Result{{Name: "rspec", Status: Skip, Detail: "no test suite detected", Required: false}}
 		}
+		if r := needBin("bundle", "rspec"); r != nil {
+			return []Result{*r}
+		}
 		o := doRunTimeout(testTimeout, dir, "bundle", exec.Command("bundle", "exec", "rspec"), []string{"exec", "rspec"})
 		return []Result{finalize(o, "rspec", true)}
 	case globCSProj(dir):
+		if r := needBin("dotnet", "dotnet test"); r != nil {
+			return []Result{*r}
+		}
 		o := doRunTimeout(testTimeout, dir, "dotnet", exec.Command("dotnet", "test", "--nologo", "-v", "q"), []string{"test", "--nologo", "-v", "q"})
 		return []Result{finalize(o, "dotnet test", true)}
 	default:
