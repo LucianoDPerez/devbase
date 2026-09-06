@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Python
 
 Typed signatures on new code, `ruff` clean. No string-built SQL — parameterize.

@@ -3,10 +3,56 @@ package packs
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/devbase/devbase/internal/detect"
 )
+
+// Every pack file must declare its enforcement taxonomy so the gate and the
+// agents know what a rule is: advisory, heuristic, or deterministic.
+func TestPackTaxonomy(t *testing.T) {
+	allowed := map[string]bool{"advisory": true, "heuristic": true, "deterministic": true}
+	var count int
+	err := filepath.Walk("../../packs", func(p string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(p, ".md") {
+			return err
+		}
+		count++
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		lines := strings.Split(string(data), "\n")
+		if len(lines) < 3 || strings.TrimSpace(lines[0]) != "---" {
+			t.Errorf("%s: missing frontmatter", p)
+			return nil
+		}
+		level := ""
+		closed := false
+		for _, l := range lines[1:] {
+			if strings.TrimSpace(l) == "---" {
+				closed = true
+				break
+			}
+			if v, ok := strings.CutPrefix(strings.TrimSpace(l), "level:"); ok {
+				level = strings.TrimSpace(v)
+			}
+		}
+		if !closed {
+			t.Errorf("%s: frontmatter not closed", p)
+		} else if !allowed[level] {
+			t.Errorf("%s: level %q not in advisory/heuristic/deterministic", p, level)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count == 0 {
+		t.Fatal("no pack files found")
+	}
+}
 
 // Every pack directory must write at least one non-empty rule file.
 func TestWriteAllStacks(t *testing.T) {

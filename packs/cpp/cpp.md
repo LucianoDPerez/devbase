@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # C++
 
 Modern C++: RAII, smart pointers, no raw `new`/`delete` in app code.

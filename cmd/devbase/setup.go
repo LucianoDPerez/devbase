@@ -21,7 +21,7 @@ import (
 // JSON-configured IDE). Codex uses TOML and gets a manual step instead.
 var context7Entry = map[string]any{
 	"command": "npx",
-	"args":    []any{"-y", "@upstash/context7-mcp"},
+	"args":    []any{"-y", "@upstash/context7-mcp@4.0.5"},
 }
 
 // toolUse explains what each dependency binary is for.
@@ -313,7 +313,7 @@ func runSetup(args []string) error {
 		fmt.Fprintln(out)
 	}
 	if len(pending) == 0 {
-		fmt.Fprintln(out, ui.Verdict(true, "READY — restart your IDE and work"))
+		fmt.Fprintln(out, ui.Verdict("PASS", "READY — restart your IDE and work"))
 	} else {
 		fmt.Fprintln(out, ui.Section("Pendiente manual"))
 		for i, p := range pending {

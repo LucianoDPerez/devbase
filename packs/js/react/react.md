@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # React
 
 Functional components + hooks. Stable keys, never array indexes for dynamic lists.

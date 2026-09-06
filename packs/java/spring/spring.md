@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Spring Boot
 
 Thin controllers, logic in services. Constructor injection, never field injection.

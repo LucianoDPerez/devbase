@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Laravel
 
 Fat models, thin controllers is a smell — push logic to actions/services.

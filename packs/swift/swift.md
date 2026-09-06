@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Swift
 
 `guard let` over nested `if let`; no force unwrap in production paths. Value

@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Django
 
 ORM first: `select_related`/`prefetch_related` against N+1, raw SQL only with

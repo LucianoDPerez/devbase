@@ -70,8 +70,13 @@ devbase init --dir /ruta/al/proyecto --wire
 # Renderizar solo para ciertos IDEs (default: detectados; también: all)
 devbase init --dir /ruta/al/proyecto --ides cursor,vscode-copilot
 
-# Verificación con evidencia: build por stack + Semgrep ERROR-only, atado al SHA
+# Verificación con evidencia: build por stack + Semgrep ERROR-only.
+# VERIFIED solo si todo lo requerido pasa; INCOMPLETE si algo requerido se salteó.
 devbase gate --dir /ruta/al/proyecto
+
+# Sobre develop: devbase gate --json  → envelope devbase.evidence.v1
+# (commit + working-tree hash + toolchain + checks con comando, exit code y duración)
+# Guarda artifact en .devbase/evidence/latest.json — exit 0/1/2 = VERIFIED/BLOCKED/INCOMPLETE
 ```
 
 Ejemplo real:

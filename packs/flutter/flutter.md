@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Flutter
 
 `const` constructors everywhere possible. Keys in dynamic lists. No business

@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Kotlin
 
 Null safety is the point: `?.` and `?:`, no `!!` without a justifying comment.

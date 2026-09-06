@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # C
 
 `-Wall -Wextra -Werror`, always. Check every return that can fail (malloc, I/O).

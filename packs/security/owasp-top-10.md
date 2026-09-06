@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # OWASP Top 10 (essentials)
 
 Broken access control, cryptographic failures, injection, insecure design,

@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # SQL
 
 Parameterize everything — string-built queries are injection bugs. Explicit

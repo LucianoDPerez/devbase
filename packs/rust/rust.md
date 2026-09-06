@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Rust
 
 Ownership first: borrow, don't clone. No `unwrap`/`expect` in production paths —

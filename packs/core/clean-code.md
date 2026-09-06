@@ -1,3 +1,7 @@
+---
+level: heuristic
+---
+
 # Clean Code
 
 Names reveal intent. Functions do one thing. No magic numbers, no dead code,
