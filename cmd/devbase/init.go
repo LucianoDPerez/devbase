@@ -87,7 +87,7 @@ func runInit(args []string) error {
 			continue
 		}
 		if *wire {
-			wireIDE(ide)
+			printWireRow(ide)
 		} else {
 			fmt.Fprintln(os.Stdout, ui.Warn(ide.Name, "run with --wire to configure"))
 		}
@@ -130,24 +130,36 @@ func renderProject(dir string, secs []render.Section, targets []adapters.IDE) ([
 	return rendered, owners, err
 }
 
-// wireIDE runs the external tool setup for one IDE.
-func wireIDE(ide adapters.IDE) {
+// wireIDE runs the external tool setup for one IDE, returning short status
+// ("ok", "warn", "fail") plus a human detail line.
+func wireIDE(ide adapters.IDE) (string, string) {
 	target, ok := engramSetup[ide.Name]
 	switch {
 	case !ok || target == "":
-		fmt.Fprintln(os.Stdout, ui.Warn(ide.Name, "manual step — engram docs for this agent"))
+		return "warn", "manual step — engram docs for this agent"
 	default:
 		if _, err := exec.LookPath("engram"); err != nil {
-			fmt.Fprintln(os.Stdout, ui.Warn(ide.Name, "SKIP (engram not installed)"))
-			return
+			return "warn", "SKIP (engram not installed)"
 		}
 		cmd := exec.Command("engram", "setup", target)
 		if out, err := cmd.CombinedOutput(); err != nil {
-			fmt.Fprintln(os.Stdout, ui.Fail(ide.Name, fmt.Sprintf("%v: %s", err, firstLine(string(out)))))
-		} else {
-			fmt.Fprintln(os.Stdout, ui.Ok(ide.Name, "wired"))
+			return "fail", fmt.Sprintf("%v: %s", err, firstLine(string(out)))
 		}
+		return "ok", "wired"
 	}
+}
+
+func printWireRow(ide adapters.IDE) (string, string) {
+	status, detail := wireIDE(ide)
+	switch status {
+	case "ok":
+		fmt.Fprintln(os.Stdout, ui.Ok(ide.Name, detail))
+	case "fail":
+		fmt.Fprintln(os.Stdout, ui.Fail(ide.Name, detail))
+	default:
+		fmt.Fprintln(os.Stdout, ui.Warn(ide.Name, detail))
+	}
+	return status, detail
 }
 
 // loadSections reads the written rule files back into stack-scoped sections.

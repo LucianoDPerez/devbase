@@ -35,6 +35,8 @@ func runSetup(args []string) error {
 		return err
 	}
 	out := os.Stdout
+	var pending []string
+	addPending := func(s string) { pending = append(pending, s) }
 
 	info := pm.Detect()
 	fmt.Fprintln(out, ui.Section("Environment"))
@@ -47,6 +49,7 @@ func runSetup(args []string) error {
 			recipe := d.Recipe(info)
 			if recipe == nil {
 				fmt.Fprintln(out, ui.Warn(d.Name, "manual: "+d.Manual))
+				addPending("Install " + d.Name + " manually: " + d.Manual)
 				continue
 			}
 			fmt.Fprintf(out, "  %s $ %s\n", d.Name, ui.Dim(strings.Join(recipe, " ")))
@@ -58,6 +61,7 @@ func runSetup(args []string) error {
 			cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 			if err := cmd.Run(); err != nil {
 				fmt.Fprintln(out, ui.Fail(d.Name, "manual: "+d.Manual))
+				addPending("Install " + d.Name + " manually: " + d.Manual)
 			} else {
 				fmt.Fprintln(out, ui.Ok(d.Name, "installed"))
 			}
@@ -71,6 +75,7 @@ func runSetup(args []string) error {
 	if _, err := exec.LookPath("gh"); err == nil {
 		if err := exec.Command("gh", "auth", "status").Run(); err != nil {
 			fmt.Fprintln(out, ui.Warn("gh auth", "run: gh auth login"))
+			addPending("Authenticate GitHub: gh auth login")
 		}
 	}
 	fmt.Fprintln(out)
@@ -111,6 +116,9 @@ func runSetup(args []string) error {
 		switch {
 		case err != nil:
 			fmt.Fprintln(out, ui.Warn(ide.Name, err.Error()))
+			if ide.Name == "codex" {
+				addPending("Codex: add the context7 server to " + cfg + " manually (TOML)")
+			}
 		case changed:
 			fmt.Fprintln(out, ui.Ok(ide.Name, "context7 added"))
 		default:
@@ -125,11 +133,29 @@ func runSetup(args []string) error {
 		if resolvePathFirst(ide, *dir) == "" {
 			continue
 		}
-		wireIDE(ide)
+		status, detail := printWireRow(ide)
+		if status == "fail" {
+			addPending("Retry wiring " + ide.Name + ": " + detail)
+		} else if ide.Name == "claude-code" {
+			addPending("Claude Code: claude plugin marketplace add Gentleman-Programming/engram && claude plugin install engram")
+		}
 	}
 	fmt.Fprintln(out)
 
-	fmt.Fprintln(out, ui.Dim("done — run `devbase doctor` to verify, then restart your IDE."))
+	if os.Getenv("CONTEXT7_API_KEY") == "" {
+		fmt.Fprintln(out, ui.Dim("Optional: free Context7 key with higher limits at https://context7.com/dashboard"))
+		fmt.Fprintln(out)
+	}
+	if len(pending) == 0 {
+		fmt.Fprintln(out, ui.Verdict(true, "READY — restart your IDE and work"))
+	} else {
+		fmt.Fprintln(out, ui.Section("Still unpack manually"))
+		for i, p := range pending {
+			fmt.Fprintf(out, "  %d. %s\n", i+1, p)
+		}
+		fmt.Fprintln(out)
+		fmt.Fprintln(out, ui.Dim("then restart your IDE."))
+	}
 	return nil
 }
 
