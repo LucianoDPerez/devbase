@@ -39,6 +39,13 @@ func runDoctor(args []string) error {
 			fmt.Fprintf(os.Stdout, "  ✓ %s\n", dep)
 		}
 	}
+	fmt.Fprintln(os.Stdout, "API keys (optional):")
+	if os.Getenv("CONTEXT7_API_KEY") != "" {
+		fmt.Fprintln(os.Stdout, "  ✓ CONTEXT7_API_KEY set (higher rate limits)")
+	} else {
+		fmt.Fprintln(os.Stdout, "  ○ CONTEXT7_API_KEY missing — Context7 works with basic limits;")
+		fmt.Fprintln(os.Stdout, "    free key with higher limits at https://context7.com/dashboard")
+	}
 	return nil
 }
 
