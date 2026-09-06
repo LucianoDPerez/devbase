@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/devbase/devbase/internal/adapters"
 	"github.com/devbase/devbase/internal/pm"
 )
 
@@ -38,6 +39,19 @@ func TestBuildCatalogComplete(t *testing.T) {
 		if !seen[id] {
 			t.Errorf("catalog missing %s", id)
 		}
+	}
+}
+
+// IDE picker maps checked entries back to adapters, nothing else.
+func TestTargetsFromSelection(t *testing.T) {
+	got := targetsFromSelection(adapters.Supported(), map[string]bool{
+		"ide:cursor": true, "ide:opencode": false,
+	})
+	if len(got) != 1 || got[0].Name != "cursor" {
+		t.Errorf("targetsFromSelection = %v", got)
+	}
+	if got := targetsFromSelection(adapters.Supported(), map[string]bool{}); len(got) != 0 {
+		t.Errorf("empty selection = %v, want none", got)
 	}
 }
 
