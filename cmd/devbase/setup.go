@@ -10,6 +10,7 @@ import (
 	"github.com/devbase/devbase/internal/detect"
 	"github.com/devbase/devbase/internal/mcpmerge"
 	"github.com/devbase/devbase/internal/pm"
+	"github.com/devbase/devbase/internal/ui"
 )
 
 // context7Entry is the uniform stdio MCP entry (npx-based, works in every
@@ -33,19 +34,22 @@ func runSetup(args []string) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+	out := os.Stdout
 
 	info := pm.Detect()
-	fmt.Fprintf(os.Stdout, "os: %s, package manager: %s\n", info.OS, info.PM)
+	fmt.Fprintln(out, ui.Section("Environment"))
+	fmt.Fprintf(out, "  %s · package manager: %s\n\n", info.OS, info.PM)
 
 	// 1. Dependencies.
+	fmt.Fprintln(out, ui.Section("Dependencies"))
 	if !*skipInstall {
 		for _, d := range pm.Missing() {
 			recipe := d.Recipe(info)
 			if recipe == nil {
-				fmt.Fprintf(os.Stdout, "install %-14s SKIP — manual: %s\n", d.Name, d.Manual)
+				fmt.Fprintln(out, ui.Warn(d.Name, "manual: "+d.Manual))
 				continue
 			}
-			fmt.Fprintf(os.Stdout, "install %-14s $ %s\n", d.Name, strings.Join(recipe, " "))
+			fmt.Fprintf(out, "  %s $ %s\n", d.Name, ui.Dim(strings.Join(recipe, " ")))
 			// Safe: recipe argv comes only from the hardcoded tables in internal/pm
 			// (fixed binaries and flags per OS/package-manager). No user input,
 			// project content, or network data ever reaches this call.
@@ -53,22 +57,32 @@ func runSetup(args []string) error {
 			cmd := exec.Command(recipe[0], recipe[1:]...)
 			cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 			if err := cmd.Run(); err != nil {
-				fmt.Fprintf(os.Stdout, "install %-14s FAIL — manual: %s\n", d.Name, d.Manual)
+				fmt.Fprintln(out, ui.Fail(d.Name, "manual: "+d.Manual))
+			} else {
+				fmt.Fprintln(out, ui.Ok(d.Name, "installed"))
 			}
+		}
+	}
+	for _, d := range pm.Deps() {
+		if isInstalled(d.Bin) {
+			fmt.Fprintln(out, ui.Ok(d.Name, "ready"))
 		}
 	}
 	if _, err := exec.LookPath("gh"); err == nil {
 		if err := exec.Command("gh", "auth", "status").Run(); err != nil {
-			fmt.Fprintln(os.Stdout, "gh found but not authenticated — run: gh auth login")
+			fmt.Fprintln(out, ui.Warn("gh auth", "run: gh auth login"))
 		}
 	}
+	fmt.Fprintln(out)
 
 	// 1b. Playwright is conditional: suggest it for browser UIs, never install
 	// browsers uninvited (hundreds of MB + system deps).
 	if detect.WebFrontend(*dir) {
-		fmt.Fprintln(os.Stdout, "web frontend detected — Playwright E2E applies to this project.")
-		fmt.Fprintln(os.Stdout, "  gate runs specs automatically once a playwright.config exists.")
-		fmt.Fprintln(os.Stdout, "  to add it: npm init playwright@latest && npx playwright install --with-deps")
+		fmt.Fprintln(out, ui.Section("E2E"))
+		fmt.Fprintln(out, "  Web frontend detected — Playwright applies to this project.")
+		fmt.Fprintln(out, ui.Dim("  gate runs specs automatically once a playwright.config exists."))
+		fmt.Fprintln(out, ui.Dim("  to add it: npm init playwright@latest && npx playwright install --with-deps"))
+		fmt.Fprintln(out)
 	}
 
 	// 2. Rules.
@@ -81,34 +95,45 @@ func runSetup(args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stdout, "stacks: %v, rendered %d native rule files\n", stacks, len(rendered))
+	fmt.Fprintln(out, ui.Section("Rules"))
+	fmt.Fprintf(out, "  stacks: %s\n", strings.Join(stacks, ", "))
+	fmt.Fprintf(out, "  %d native rule files rendered\n\n", len(rendered))
 
 	// 3. MCP entries (Context7; Engram and codebase-memory self-configure).
+	fmt.Fprintln(out, ui.Section("MCP"))
 	for _, ide := range targets {
 		cfg := resolvePathFirst(ide, *dir)
 		if cfg == "" {
-			fmt.Fprintf(os.Stdout, "mcp %-14s SKIP (no config found)\n", ide.Name)
+			fmt.Fprintln(out, ui.Warn(ide.Name, "no config found"))
 			continue
 		}
 		changed, err := mcpmerge.EnsureEntry(cfg, ide.JSONKey, "context7", context7Entry)
 		switch {
 		case err != nil:
-			fmt.Fprintf(os.Stdout, "mcp %-14s SKIP (%v)\n", ide.Name, err)
+			fmt.Fprintln(out, ui.Warn(ide.Name, err.Error()))
 		case changed:
-			fmt.Fprintf(os.Stdout, "mcp %-14s context7 added to %s\n", ide.Name, cfg)
+			fmt.Fprintln(out, ui.Ok(ide.Name, "context7 added"))
 		default:
-			fmt.Fprintf(os.Stdout, "mcp %-14s context7 already present\n", ide.Name)
+			fmt.Fprintln(out, ui.Ok(ide.Name, "context7 present"))
 		}
 	}
+	fmt.Fprintln(out)
 
 	// 4. External wiring.
+	fmt.Fprintln(out, ui.Section("Wiring"))
 	for _, ide := range targets {
 		if resolvePathFirst(ide, *dir) == "" {
 			continue
 		}
 		wireIDE(ide)
 	}
+	fmt.Fprintln(out)
 
-	fmt.Fprintln(os.Stdout, "done — run `devbase doctor` to verify, then restart your IDE.")
+	fmt.Fprintln(out, ui.Dim("done — run `devbase doctor` to verify, then restart your IDE."))
 	return nil
+}
+
+func isInstalled(bin string) bool {
+	_, err := exec.LookPath(bin)
+	return err == nil
 }

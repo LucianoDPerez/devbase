@@ -13,6 +13,7 @@ import (
 	"github.com/devbase/devbase/internal/detect"
 	"github.com/devbase/devbase/internal/packs"
 	"github.com/devbase/devbase/internal/render"
+	"github.com/devbase/devbase/internal/ui"
 )
 
 // manifest records what init wrote for a project.
@@ -72,11 +73,14 @@ func runInit(args []string) error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stdout, "stacks: %v\n", stacks)
-	fmt.Fprintf(os.Stdout, "wrote %d rule files to %s\n", len(written), filepath.Join(*dir, ".devbase", "rules"))
+	fmt.Fprintln(os.Stdout, ui.Section("Rules"))
+	fmt.Fprintf(os.Stdout, "  stacks: %s\n", strings.Join(stacks, ", "))
+	fmt.Fprintf(os.Stdout, "  %d rule files in %s\n", len(written), filepath.Join(*dir, ".devbase", "rules"))
 	for rel, names := range owners {
-		fmt.Fprintf(os.Stdout, "rendered %-40s for %s\n", rel, strings.Join(names, ","))
+		fmt.Fprintln(os.Stdout, ui.Ok(strings.Join(names, ","), rel))
 	}
+	fmt.Fprintln(os.Stdout)
+	fmt.Fprintln(os.Stdout, ui.Section("Wiring"))
 
 	for _, ide := range targets {
 		if resolvePathFirst(ide, *dir) == "" {
@@ -85,7 +89,7 @@ func runInit(args []string) error {
 		if *wire {
 			wireIDE(ide)
 		} else {
-			fmt.Fprintf(os.Stdout, "wire %s: run with --wire to configure\n", ide.Name)
+			fmt.Fprintln(os.Stdout, ui.Warn(ide.Name, "run with --wire to configure"))
 		}
 	}
 	return nil
@@ -131,17 +135,17 @@ func wireIDE(ide adapters.IDE) {
 	target, ok := engramSetup[ide.Name]
 	switch {
 	case !ok || target == "":
-		fmt.Fprintf(os.Stdout, "wire %s: manual step — engram docs for this agent\n", ide.Name)
+		fmt.Fprintln(os.Stdout, ui.Warn(ide.Name, "manual step — engram docs for this agent"))
 	default:
 		if _, err := exec.LookPath("engram"); err != nil {
-			fmt.Fprintf(os.Stdout, "wire %s: SKIP (engram not installed)\n", ide.Name)
+			fmt.Fprintln(os.Stdout, ui.Warn(ide.Name, "SKIP (engram not installed)"))
 			return
 		}
 		cmd := exec.Command("engram", "setup", target)
 		if out, err := cmd.CombinedOutput(); err != nil {
-			fmt.Fprintf(os.Stdout, "wire %s: FAIL (%v: %s)\n", ide.Name, err, string(out))
+			fmt.Fprintln(os.Stdout, ui.Fail(ide.Name, fmt.Sprintf("%v: %s", err, firstLine(string(out)))))
 		} else {
-			fmt.Fprintf(os.Stdout, "wire %s: OK\n", ide.Name)
+			fmt.Fprintln(os.Stdout, ui.Ok(ide.Name, "wired"))
 		}
 	}
 }
@@ -210,4 +214,20 @@ func resolvePathFirst(ide adapters.IDE, dir string) string {
 		}
 	}
 	return ""
+}
+
+func resolvePath(rel, home, dir string) string {
+	var p string
+	switch {
+	case strings.HasPrefix(rel, "HOME:"):
+		p = filepath.Join(home, strings.TrimPrefix(rel, "HOME:"))
+	case strings.HasPrefix(rel, "REPO:"):
+		p = filepath.Join(dir, strings.TrimPrefix(rel, "REPO:"))
+	default:
+		return ""
+	}
+	if _, err := os.Stat(p); err != nil {
+		return ""
+	}
+	return p
 }
