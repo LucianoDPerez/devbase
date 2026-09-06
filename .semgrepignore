@@ -1,0 +1,3 @@
+# Intentionally vulnerable E2E fixtures: the gate must catch them per-fixture
+# (asserted in scripts/e2e.sh), never as repo findings.
+testdata/

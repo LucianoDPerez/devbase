@@ -47,6 +47,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install semgrep
+      - run: go generate ./...
       - run: bash scripts/e2e.sh
       - uses: actions/upload-artifact@v4
         if: always()
