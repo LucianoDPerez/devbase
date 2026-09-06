@@ -1,7 +1,12 @@
 # DevBase Architecture
 
 `devbase init` detects the stack (`internal/detect`) and loads only matching
-packs from `packs/` (generic first: `core`, last: `security`).
+packs from `packs/` (generic first: `core`, last: `security`). `.devbase/`
+stays the source of truth; `internal/render` then generates each detected
+IDE's native rule files (CLAUDE.md, AGENTS.md, `.cursor/rules/*.mdc`,
+`.github/copilot-instructions.md`, `.windsurf/rules/*.md`) with a
+`devbase:managed` marker. Pre-existing files without the marker are backed
+up to `.pre-devbase.bak`, never overwritten blindly.
 
 `devbase doctor` reports detected IDEs (`internal/adapters`, one row per IDE)
 and missing dependencies. It never writes without asking.

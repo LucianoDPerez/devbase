@@ -50,6 +50,9 @@ devbase init --dir /ruta/al/proyecto
 # Además ejecuta el setup de herramientas externas en los IDEs detectados
 devbase init --dir /ruta/al/proyecto --wire
 
+# Renderizar solo para ciertos IDEs (default: detectados; también: all)
+devbase init --dir /ruta/al/proyecto --ides cursor,vscode-copilot
+
 # Verificación con evidencia: build por stack + Semgrep ERROR-only, atado al SHA
 devbase gate --dir /ruta/al/proyecto
 ```
