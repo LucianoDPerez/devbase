@@ -53,7 +53,8 @@ func runInit(args []string) error {
 		return err
 	}
 
-	stacks, secs, written, err := writeProject(*dir)
+	stacks := detect.Detect(*dir)
+	secs, written, err := writeProject(*dir, stacks)
 	if err != nil {
 		return err
 	}
@@ -95,18 +96,17 @@ func runInit(args []string) error {
 	return nil
 }
 
-// writeProject detects the stack and writes .devbase/rules.
-func writeProject(dir string) ([]string, []render.Section, []string, error) {
-	stacks := detect.Detect(dir)
+// writeProject writes .devbase/rules for the given stacks.
+func writeProject(dir string, stacks []string) ([]render.Section, []string, error) {
 	written, err := packs.Write(dir, stacks)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	secs, err := loadSections(dir, written)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
-	return stacks, secs, written, nil
+	return secs, written, nil
 }
 
 // renderProject generates native rule files for targets, deduping shared

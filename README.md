@@ -41,8 +41,12 @@ Verifican SHA-256 contra `checksums.txt` del release. Desde fuente: `go build -o
 ## Uso
 
 ```bash
-# Bootstrap completo: instala dependencias, escribe reglas, configura IDEs
+# Bootstrap completo: checklist interactivo (MCPs, reglas, skills, herramientas),
+# instala dependencias, escribe reglas, configura IDEs
 devbase setup --dir /ruta/al/proyecto
+
+# Aceptar el catálogo completo sin preguntas (CI, scripts)
+devbase setup --dir /ruta/al/proyecto --yes
 
 # Solo reglas + wiring (sin instalar nada)
 devbase setup --dir /ruta/al/proyecto --skip-install

@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/devbase/devbase/internal/detect"
 	"github.com/devbase/devbase/internal/mcpmerge"
 	"github.com/devbase/devbase/internal/pm"
 	"github.com/devbase/devbase/internal/skills"
+	"github.com/devbase/devbase/internal/tui"
 	"github.com/devbase/devbase/internal/ui"
 )
 
@@ -62,6 +64,7 @@ func runSetup(args []string) error {
 	dir := fs.String("dir", ".", "project directory to set up")
 	ides := fs.String("ides", "detected", "which IDEs to configure: detected, all, or comma list")
 	skipInstall := fs.Bool("skip-install", false, "skip dependency installation (rules + wiring only)")
+	yes := fs.Bool("yes", false, "accept the full catalog without the interactive checklist")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -70,6 +73,20 @@ func runSetup(args []string) error {
 	addPending := func(s string) { pending = append(pending, s) }
 
 	info := pm.Detect()
+	allStacks := detect.Detect(*dir)
+
+	// 0. Catalog checklist: everything on by default, space toggles.
+	catalog := buildCatalog(info, allStacks)
+	if !*yes {
+		var err error
+		catalog, err = tui.Select("DevBase — elegí tu arsenal (todo viene activado)", catalog)
+		if err != nil {
+			return err
+		}
+	}
+	sel := tui.SelectedIDs(catalog)
+	stacks := filterStacks(allStacks, sel)
+
 	fmt.Fprintln(out, ui.Section("Environment"))
 	fmt.Fprintf(out, "  %s · package manager: %s\n\n", info.OS, info.PM)
 
@@ -77,6 +94,18 @@ func runSetup(args []string) error {
 	fmt.Fprintln(out, ui.Section("Dependencies"))
 	if !*skipInstall {
 		for _, d := range pm.Missing() {
+			if !sel["tool:"+d.Bin] {
+				fmt.Fprintln(out, ui.Warn(d.Name, "deselected"))
+				continue
+			}
+			if d.Bin == "engram" && !sel["mcp:engram"] {
+				fmt.Fprintln(out, ui.Warn(d.Name, "deselected with its MCP"))
+				continue
+			}
+			if d.Bin == "codebase-memory-mcp" && !sel["mcp:codebase-memory"] {
+				fmt.Fprintln(out, ui.Warn(d.Name, "deselected with its MCP"))
+				continue
+			}
 			recipe := d.Recipe(info)
 			if recipe == nil {
 				fmt.Fprintln(out, ui.Warn(d.Name, "manual: "+d.Manual))
@@ -122,7 +151,7 @@ func runSetup(args []string) error {
 	}
 
 	// 2. Rules.
-	stacks, secs, _, err := writeProject(*dir)
+	secs, _, err := writeProject(*dir, stacks)
 	if err != nil {
 		return err
 	}
@@ -135,35 +164,56 @@ func runSetup(args []string) error {
 	fmt.Fprintf(out, "  stacks: %s\n", strings.Join(stacks, ", "))
 	fmt.Fprintf(out, "  %d native rule files rendered\n\n", len(rendered))
 
-	// 2b. Starter workflow skills.
-	if _, err := skills.Install(*dir); err != nil {
+	// 2b. Starter workflow skills (only selected).
+	keepSkills := map[string]bool{}
+	for _, n := range skills.Names() {
+		keepSkills[n] = sel["skill:"+n]
+	}
+	skillPaths, err := skills.Install(*dir, keepSkills)
+	if err != nil {
 		return err
 	}
 	fmt.Fprintln(out, ui.Section("Skills"))
 	fmt.Fprintf(out, "  %d workflow skills installed (.agents/skills, .claude/skills)\n\n", len(skills.Names()))
 
+	// 2c. Local-only mode: ignore everything DevBase created.
+	if sel["opt:gitignore"] {
+		if err := writeGitignore(*dir, rendered, skillPaths); err != nil {
+			return err
+		}
+		fmt.Fprintln(out, ui.Section("Git"))
+		fmt.Fprintln(out, "  .gitignore actualizado — nada de DevBase se sube al repo")
+		fmt.Fprintln(out)
+	}
+
 	// 3. MCP entries (Context7; Engram and codebase-memory self-configure).
 	fmt.Fprintln(out, ui.Section("MCP"))
 	mcpActive := map[string]bool{}
+	wantCtx := sel["mcp:context7"]
+	wantEngram := sel["mcp:engram"]
 	for _, ide := range targets {
 		cfg := resolvePathFirst(ide, *dir)
 		if cfg == "" {
 			fmt.Fprintln(out, ui.Warn(ide.Name, "no config found"))
 			continue
 		}
-		changed, err := mcpmerge.EnsureEntry(cfg, ide.JSONKey, "context7", context7Entry)
-		switch {
-		case err != nil:
-			fmt.Fprintln(out, ui.Warn(ide.Name, err.Error()))
-			if ide.Name == "codex" {
-				addPending("Codex: add the context7 server to " + cfg + " manually (TOML)")
+		if !wantCtx {
+			fmt.Fprintln(out, ui.Warn(ide.Name, "context7 deselected"))
+		} else {
+			changed, err := mcpmerge.EnsureEntry(cfg, ide.JSONKey, "context7", context7Entry)
+			switch {
+			case err != nil:
+				fmt.Fprintln(out, ui.Warn(ide.Name, err.Error()))
+				if ide.Name == "codex" {
+					addPending("Codex: add the context7 server to " + cfg + " manually (TOML)")
+				}
+			case changed:
+				fmt.Fprintln(out, ui.Ok(ide.Name, "context7 added"))
+				mcpActive["context7"] = true
+			default:
+				fmt.Fprintln(out, ui.Ok(ide.Name, "context7 present"))
+				mcpActive["context7"] = true
 			}
-		case changed:
-			fmt.Fprintln(out, ui.Ok(ide.Name, "context7 added"))
-			mcpActive["context7"] = true
-		default:
-			fmt.Fprintln(out, ui.Ok(ide.Name, "context7 present"))
-			mcpActive["context7"] = true
 		}
 	}
 	fmt.Fprintln(out)
@@ -173,6 +223,10 @@ func runSetup(args []string) error {
 	wiredEngram := false
 	for _, ide := range targets {
 		if resolvePathFirst(ide, *dir) == "" {
+			continue
+		}
+		if !wantEngram {
+			fmt.Fprintln(out, ui.Warn(ide.Name, "engram deselected"))
 			continue
 		}
 		status, detail := printWireRow(ide)
@@ -186,7 +240,7 @@ func runSetup(args []string) error {
 		}
 	}
 	fmt.Fprintln(out)
-	if isInstalled("codebase-memory-mcp") {
+	if isInstalled("codebase-memory-mcp") && sel["mcp:codebase-memory"] {
 		mcpActive["codebase-memory"] = true
 	}
 
@@ -205,6 +259,9 @@ func runSetup(args []string) error {
 	}
 	fmt.Fprintln(out, "  Skills (cómo trabaja el agente):")
 	for _, n := range skills.Names() {
+		if !sel["skill:"+n] {
+			continue
+		}
 		use := skillUse[n]
 		if use == "" {
 			use = "workflow del agente"
@@ -252,4 +309,117 @@ func runSetup(args []string) error {
 func isInstalled(bin string) bool {
 	_, err := exec.LookPath(bin)
 	return err == nil
+}
+
+const gitignoreMarker = "# devbase:managed (solo uso local)"
+
+// writeGitignore appends every DevBase-created path to .gitignore so local-only
+// users never commit them. Idempotent: a second run changes nothing.
+func writeGitignore(dir string, rendered, skillPaths []string) error {
+	var entries []string
+	entries = append(entries, ".devbase/")
+	entries = append(entries, "*.pre-devbase.bak")
+	toRel := func(abs string) string {
+		rel, err := filepath.Rel(dir, abs)
+		if err != nil {
+			return ""
+		}
+		return filepath.ToSlash(rel)
+	}
+	for _, p := range append(append([]string{}, rendered...), skillPaths...) {
+		if rel := toRel(p); rel != "" {
+			entries = append(entries, rel)
+		}
+	}
+	path := filepath.Join(dir, ".gitignore")
+	var body string
+	if data, err := os.ReadFile(path); err == nil {
+		body = string(data)
+		if strings.Contains(body, gitignoreMarker) {
+			return nil
+		}
+		if body != "" && !strings.HasSuffix(body, "\n") {
+			body += "\n"
+		}
+	}
+	var b strings.Builder
+	b.WriteString(body)
+	b.WriteString(gitignoreMarker + "\n")
+	for _, e := range entries {
+		b.WriteString(e + "\n")
+	}
+	return os.WriteFile(path, []byte(b.String()), 0o644)
+}
+
+// mcpCatalogUse explains the wired MCP servers.
+var mcpCatalogUse = map[string]string{
+	"mcp:context7":             "documentación viva de librerías",
+	"mcp:engram":               "memoria persistente entre sesiones",
+	"mcp:codebase-memory":      "grafo estructural del repo",
+	"tool:git":                 "versionado del proyecto",
+	"tool:gh":                  "PRs, issues y releases",
+	"tool:node":                "servidores MCP vía npx",
+	"tool:semgrep":             "seguridad SAST en el gate",
+	"tool:engram":              "memoria persistente entre sesiones",
+	"tool:codebase-memory-mcp": "grafo estructural del código",
+}
+
+// buildCatalog assembles the interactive catalog: MCPs, rules for the detected
+// stacks, starter skills, and dependency tools. Everything defaults on.
+func buildCatalog(info pm.Info, stacks []string) []tui.Entry {
+	var out []tui.Entry
+	add := func(group, id, name, use string) {
+		out = append(out, tui.Entry{Group: group, ID: id, Name: name, Use: use, On: true})
+	}
+	add("MCPs", "mcp:context7", "context7", mcpCatalogUse["mcp:context7"])
+	add("MCPs", "mcp:engram", "engram", mcpCatalogUse["mcp:engram"])
+	add("MCPs", "mcp:codebase-memory", "codebase-memory", mcpCatalogUse["mcp:codebase-memory"])
+	for _, s := range stacks {
+		use := stackUse[s]
+		if use == "" {
+			use = "reglas contextuales"
+		}
+		add("Reglas", "stack:"+s, s, use)
+	}
+	for _, n := range skills.Names() {
+		use := skillUse[n]
+		if use == "" {
+			use = "workflow del agente"
+		}
+		add("Skills", "skill:"+n, n, use)
+	}
+	missing := map[string]bool{}
+	for _, d := range pm.Missing() {
+		missing[d.Bin] = true
+	}
+	for _, d := range pm.Deps() {
+		note := ""
+		if !missing[d.Bin] {
+			note = "ya instalado"
+		}
+		use := toolUse[d.Bin]
+		if use == "" {
+			use = d.Name
+		}
+		e := tui.Entry{Group: "Herramientas", ID: "tool:" + d.Bin, Name: d.Name, Use: use, Note: note, On: true}
+		out = append(out, e)
+	}
+	out = append(out, tui.Entry{
+		Group: "Opciones", ID: "opt:gitignore", Name: "solo uso local",
+		Use: "ignora en git todo lo creado por DevBase (no se sube al repo)", On: false,
+	})
+	_ = info
+	return out
+}
+
+// filterStacks keeps detected stacks in order, dropping deselected ones while
+// always retaining core (the base everything builds on).
+func filterStacks(all []string, sel map[string]bool) []string {
+	var out []string
+	for _, s := range all {
+		if s == "core" || sel["stack:"+s] {
+			out = append(out, s)
+		}
+	}
+	return out
 }

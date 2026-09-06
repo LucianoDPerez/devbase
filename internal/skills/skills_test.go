@@ -14,7 +14,7 @@ func TestInstall(t *testing.T) {
 		t.Fatal("no skills embedded")
 	}
 	dir := t.TempDir()
-	installed, err := Install(dir)
+	installed, err := Install(dir, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

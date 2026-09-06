@@ -26,12 +26,15 @@ func Names() []string {
 	return out
 }
 
-// Install copies every skill to the project's agent skills locations:
+// Install copies the selected skills to the project's agent skills locations:
 // .agents/skills (agent-agnostic) and .claude/skills (Claude Code).
-// Returns installed SKILL.md paths.
-func Install(dir string) ([]string, error) {
+// A nil keep set installs everything. Returns installed SKILL.md paths.
+func Install(dir string, keep map[string]bool) ([]string, error) {
 	var installed []string
 	for _, name := range Names() {
+		if keep != nil && !keep[name] {
+			continue
+		}
 		src := filepath.Join("data", name, "SKILL.md")
 		data, err := files.ReadFile(filepath.ToSlash(src))
 		if err != nil {
