@@ -2,6 +2,16 @@
 
 All notable changes to DevBase. Format follows Keep a Changelog; versions follow SemVer.
 
+## [v0.15.0] — 2026-09-06
+
+- Missing toolchains report required INCOMPLETE instead of false FAIL.
+- Codex `config.toml` gets real context7 merge (schema verified from engram output).
+
+## [v0.14.0] — 2026-09-06
+
+- Unit-test matrix on ubuntu/windows/macos; installer smoke jobs execute install.sh and install.ps1 for real.
+- apt Node recipe removed (distro nodejs breaks npx MCPs — honest manual step instead); LF line endings enforced for gofmt on Windows.
+
 ## [v0.13.0] — 2026-09-06
 
 - Always-on E2E battery (`scripts/e2e.sh` + CI job): clean-go, broken-node, vulnerable-py, empty-dir and dirty-tree fixtures asserting verdicts, evidence uploaded as CI artifact.
