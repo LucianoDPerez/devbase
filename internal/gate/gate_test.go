@@ -73,6 +73,20 @@ func TestMissingToolchainIncomplete(t *testing.T) {
 	}
 }
 
+// A PHP project must not fall through to Python checks: it gets its own
+// composer validation (or a required SKIP when composer is absent).
+func TestComposerSplit(t *testing.T) {
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "composer.json"), `{"name":"acme/app"}`+"\n")
+	rs := buildChecks(dir)
+	if len(rs) != 1 || rs[0].Name != "composer validate" || !rs[0].Required {
+		t.Fatalf("composer project = %+v, want required composer validate", rs)
+	}
+	if rs[0].Status == Fail {
+		t.Errorf("valid manifest must not FAIL: %+v", rs[0])
+	}
+}
+
 // A dirty tree hashes differently from clean and flags dirty.
 func TestWorkingTreeDirty(t *testing.T) {
 	dir := t.TempDir()

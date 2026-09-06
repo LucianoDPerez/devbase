@@ -115,6 +115,10 @@ func gitOut(dir string, args ...string) outcome {
 	return doRun(dir, "git", exec.Command("git", args...), args)
 }
 
+func composerOut(dir string, args ...string) outcome {
+	return doRun(dir, "composer", exec.Command("composer", args...), args)
+}
+
 func goOut(dir string, args ...string) outcome {
 	return doRun(dir, "go", exec.Command("go", args...), args)
 }
@@ -308,7 +312,19 @@ func buildChecks(dir string) []Result {
 		}
 		r.Status, r.Detail = Pass, "clean"
 		return []Result{r}
-	case has(dir, "composer.json"), has(dir, "requirements.txt"), has(dir, "pyproject.toml"):
+	case has(dir, "composer.json"):
+		if r := needBin("composer", "composer validate"); r != nil {
+			return []Result{*r}
+		}
+		o := composerOut(dir, "validate", "--no-check-publish")
+		r := o.result("composer validate", true)
+		if o.code != 0 {
+			r.Status, r.Detail = Fail, o.out
+			return []Result{r}
+		}
+		r.Status, r.Detail = Pass, "valid"
+		return []Result{r}
+	case has(dir, "requirements.txt"), has(dir, "pyproject.toml"):
 		files := changedPy(dir)
 		if len(files) == 0 {
 			return []Result{{Name: "py_compile", Status: Skip, Detail: "no python files changed", Required: true}}

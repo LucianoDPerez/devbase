@@ -2,11 +2,11 @@
 
 ## Supported Versions
 
-| Version | Supported |
-| ------- | --------- |
-| main    | ✅        |
-
-Early MVP: everything on `main` is supported, releases will be versioned later.
+| Version | Supported          |
+| ------- | ------------------ |
+| 0.15.x  | ✅                 |
+| < 0.15  | ❌ (upgrade)       |
+| main    | ✅ (pre-release)   |
 
 ## Reporting a Vulnerability
 
