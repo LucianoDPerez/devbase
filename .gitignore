@@ -6,6 +6,9 @@
 *.test
 *.out
 
+# Generated embed copy of packs/ (see internal/packs: go generate ./...)
+/internal/packs/data/
+
 # OS
 .DS_Store
 

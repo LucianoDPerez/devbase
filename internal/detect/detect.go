@@ -7,17 +7,14 @@ import (
 	"path/filepath"
 )
 
-// Stack is a detected technology stack identifier, e.g. "php/laravel".
-type Stack string
-
 // Detect inspects dir for well-known marker files and returns the matching
 // stack packs in load order (generic first, specific last).
-func Detect(dir string) []Stack {
+func Detect(dir string) []string {
 	has := func(name string) bool {
 		_, err := os.Stat(filepath.Join(dir, name))
 		return err == nil
 	}
-	stacks := []Stack{"core"}
+	stacks := []string{"core"}
 	switch {
 	case has("artisan") || has("composer.json"):
 		stacks = append(stacks, "php", "php/laravel")

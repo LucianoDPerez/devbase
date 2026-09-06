@@ -1,7 +1,40 @@
 package main
 
-import "errors"
+import (
+	"flag"
+	"fmt"
+	"os"
+
+	"github.com/devbase/devbase/internal/gate"
+)
 
 func runGate(args []string) error {
-	return errors.New("gate: not implemented yet (next slice: tests + lint + build + semgrep ERROR-only)")
+	fs := flag.NewFlagSet("gate", flag.ContinueOnError)
+	dir := fs.String("dir", ".", "project directory to verify")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	rep := gate.Run(*dir)
+	fmt.Fprintf(os.Stdout, "sha: %s\n", rep.SHA)
+	for _, r := range rep.Results {
+		fmt.Fprintf(os.Stdout, "%-12s %-6s %s\n", r.Name, r.Status, firstLine(r.Detail))
+	}
+	verdict := rep.Verdict()
+	fmt.Fprintf(os.Stdout, "verdict: %s\n", verdict)
+	if verdict == gate.Fail {
+		os.Exit(1)
+	}
+	return nil
+}
+
+func firstLine(s string) string {
+	for i, c := range s {
+		if c == '\n' {
+			return s[:i]
+		}
+	}
+	if len(s) > 160 {
+		return s[:160] + "…"
+	}
+	return s
 }
