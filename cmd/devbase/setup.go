@@ -44,8 +44,12 @@ func runSetup(args []string) error {
 				fmt.Fprintf(os.Stdout, "install %-14s SKIP — manual: %s\n", d.Name, d.Manual)
 				continue
 			}
-			fmt.Fprintf(os.Stdout, "install %-14s $ %s\n", d.Name, strings.Join(recipe, " "))
-			cmd := exec.Command(recipe[0], recipe[1:]...)
+		fmt.Fprintf(os.Stdout, "install %-14s $ %s\n", d.Name, strings.Join(recipe, " "))
+		// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
+		// Safe: recipe argv comes only from the hardcoded tables in internal/pm
+		// (fixed binaries and flags per OS/package-manager). No user input,
+		// project content, or network data ever reaches this call.
+		cmd := exec.Command(recipe[0], recipe[1:]...)
 			cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 			if err := cmd.Run(); err != nil {
 				fmt.Fprintf(os.Stdout, "install %-14s FAIL — manual: %s\n", d.Name, d.Manual)
