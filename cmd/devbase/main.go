@@ -6,6 +6,9 @@ import (
 	"os"
 )
 
+// version is set at release time via -ldflags "-X main.version=...".
+var version = "dev"
+
 func main() {
 	if len(os.Args) < 2 {
 		usage()
@@ -20,7 +23,7 @@ func main() {
 	case "gate":
 		err = runGate(os.Args[2:])
 	case "version", "--version", "-v":
-		fmt.Println("devbase v0.1.0")
+		fmt.Println("devbase " + version)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
 		usage()
