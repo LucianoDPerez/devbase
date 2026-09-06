@@ -71,3 +71,7 @@ Siguiente: profiles de verificación por stack (PHPUnit/PHPStan/Pint, pytest/ruf
 ## Contribuir
 
 Ver [CONTRIBUTING.md](CONTRIBUTING.md). Commits convencionales, sin atribución IA. Reportes de seguridad por GitHub Security Advisories ([SECURITY.md](SECURITY.md)).
+
+## Licencia
+
+MIT — ver [LICENSE](LICENSE).
