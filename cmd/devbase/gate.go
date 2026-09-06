@@ -10,6 +10,12 @@ import (
 
 func runGate(args []string) error {
 	fs := flag.NewFlagSet("gate", flag.ContinueOnError)
+	fs.Usage = func() {
+		fmt.Fprintln(os.Stderr, "Usage: devbase gate [--dir PATH]")
+		fmt.Fprintln(os.Stderr, "  Deterministic checks (build per stack + Semgrep ERROR-only) pinned")
+		fmt.Fprintln(os.Stderr, "  to the git SHA. Prints VERIFIED/BLOCKED, exits 1 when BLOCKED.")
+		fs.PrintDefaults()
+	}
 	dir := fs.String("dir", ".", "project directory to verify")
 	if err := fs.Parse(args); err != nil {
 		return err

@@ -15,6 +15,11 @@ var doctorDeps = []string{"git", "gh", "engram", "codebase-memory-mcp", "semgrep
 
 func runDoctor(args []string) error {
 	fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
+	fs.Usage = func() {
+		fmt.Fprintln(os.Stderr, "Usage: devbase doctor [--dir PATH]")
+		fmt.Fprintln(os.Stderr, "  Read-only: detected IDE configs, dependency binaries, optional API keys.")
+		fs.PrintDefaults()
+	}
 	dir := fs.String("dir", ".", "project directory to inspect")
 	if err := fs.Parse(args); err != nil {
 		return err
