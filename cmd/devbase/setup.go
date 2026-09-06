@@ -45,10 +45,10 @@ func runSetup(args []string) error {
 				continue
 			}
 		fmt.Fprintf(os.Stdout, "install %-14s $ %s\n", d.Name, strings.Join(recipe, " "))
-		// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
 		// Safe: recipe argv comes only from the hardcoded tables in internal/pm
 		// (fixed binaries and flags per OS/package-manager). No user input,
 		// project content, or network data ever reaches this call.
+		// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
 		cmd := exec.Command(recipe[0], recipe[1:]...)
 			cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 			if err := cmd.Run(); err != nil {
