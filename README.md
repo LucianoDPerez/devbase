@@ -1,44 +1,46 @@
 # DevBase
 
-**Un solo comando que deja a cualquier dev con el arsenal completo: herramientas probadas, reglas contextuales y verificación con evidencia — en su SO y su IDE.**
+**One command that leaves any dev with the full arsenal: proven tools, contextual rules, and evidence-based verification — on their OS and their IDE.**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.sh | bash
-cd tu-proyecto
+cd your-project
 devbase setup --dir .
 ```
 
-## El problema
+*Leer en [español](README.es.md).*
 
-Cada dev pierde días en lo mismo: buscar qué MCPs instalar, copiar reglas sueltas de internet, pelearse con configs distintas por IDE (Cursor usa una clave, VS Code otra, Codex TOML), y encima el agente alucina APIs y declara "listo" sin pruebas. DevBase ataca las tres cosas de raíz.
+## The problem
 
-## Qué hace por vos
+Every dev loses days to the same chores: hunting down which MCPs to install, copy-pasting scattered rules from the internet, fighting per-IDE configs (Cursor uses one key, VS Code another, Codex TOML), while the agent hallucinates APIs and declares "done" with no proof. DevBase attacks all three at the root.
 
-1. **Instala** lo que falta según tu sistema (brew/apt/dnf/pacman/winget): `gh`, Node, Semgrep, Engram, codebase-memory — o te dice exactamente dónde conseguirlo si no hay receta automática.
-2. **Detecta tu stack** (PHP/Laravel, React/Next, Python/Django, Go, Rust, Ruby, Java, C#, Kotlin, Swift, Flutter y más) y escribe solo las reglas que aplican, en el formato nativo de cada IDE.
-3. **Configura tus IDEs** (OpenCode, Claude Code, Cursor, VS Code + Copilot, Windsurf, Codex): MCPs, reglas y skills, con backup de todo lo previo.
-4. **Verifica con evidencia**: el gate corre la suite de tests del proyecto (`go test`, `npm test`, `pytest`, PHPUnit, `cargo test`…), build, análisis estático, Semgrep y E2E cuando hay specs — y emite `VERIFIED`, `BLOCKED` o `INCOMPLETE`, nunca un "creo que está bien".
+## What it does for you
 
-![Instalación en una línea](docs/images/install.png)
+1. **Installs** what's missing for your system (brew/apt/dnf/pacman/winget): `gh`, Node, Semgrep, Engram, codebase-memory — or tells you exactly where to get it when there's no automated recipe.
+2. **Detects your stack** (PHP/Laravel, React/Next, Python/Django, Go, Rust, Ruby, Java, C#, Kotlin, Swift, Flutter and more) and writes only the rules that apply, in each IDE's native format.
+3. **Configures your IDEs** (OpenCode, Claude Code, Cursor, VS Code + Copilot, Windsurf, Codex): MCPs, rules and skills, backing up everything first.
+4. **Verifies with evidence**: the gate runs your project's test suite, build, static analysis, Semgrep and E2E, then emits `VERIFIED`, `BLOCKED` or `INCOMPLETE` — never a "looks good to me".
 
-## El catálogo
+![One-line install](docs/images/install.png)
 
-Al correr `setup` elegís de un catálogo curado — todo activado por default, espacio para quitar:
+## The catalog
 
-![Checklist interactivo](docs/images/devbase-setup.png)
+Running `setup` shows a curated checklist — everything on by default, space to opt out:
 
-Al final, el reporte te dice qué hace cada pieza:
+![Interactive checklist](docs/images/devbase-setup.png)
 
-![Reporte final](docs/images/finish-setup.png)
+At the end, a report tells you what each piece is for:
 
-## Casos de uso
+![Final report](docs/images/finish-setup.png)
 
-- **Onboarding en 5 minutos**: clonás un repo, corrés `setup`, y tu agente ya conoce el stack, las convenciones y la memoria del proyecto.
-- **Pre-commit real**: `devbase gate --dir .` bloquea si hay un error de tipos, un hallazgo de seguridad o tests rotos — con la evidencia exacta.
-- **Equipos**: las reglas viven en el repo (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules`…), así todos los agentes trabajan igual. O activá *solo uso local* y nada se sube a git.
-- **CI**: `devbase gate --json` emite el envelope `devbase.evidence.v1` (commit + working-tree hash + toolchain + checks) para PRs y pipelines.
+## Use cases
 
-## Instalación y uso
+- **5-minute onboarding**: clone a repo, run `setup`, and your agent already knows the stack, the conventions and the project memory.
+- **Real pre-commit**: `devbase gate --dir .` blocks on a type error, a security finding or broken tests — with the exact evidence.
+- **Teams**: rules live in the repo (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules`…), so every agent behaves the same. Or enable *local-only mode* and nothing is committed.
+- **CI**: `devbase gate --json` emits the `devbase.evidence.v1` envelope (commit + working-tree hash + toolchain + checks) for PRs and pipelines.
+
+## Install and run
 
 ```bash
 # macOS / Linux
@@ -48,32 +50,32 @@ curl -fsSL https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.
 irm https://raw.githubusercontent.com/LucianoDPerez/devbase/main/install.ps1 | iex
 ```
 
-Verifican SHA-256 contra `checksums.txt` del release. Desde fuente: `go build -o devbase ./cmd/devbase` (Go 1.25+).
+SHA-256 verified against the release `checksums.txt`. From source: `go build -o devbase ./cmd/devbase` (Go 1.25+).
 
 ```bash
-cd tu-proyecto
-devbase setup --dir .              # bootstrap completo e interactivo
-devbase setup --dir . --yes        # sin preguntas (CI, scripts)
-devbase doctor                     # diagnóstico de solo lectura
+cd your-project
+devbase setup --dir .              # full interactive bootstrap
+devbase setup --dir . --yes        # no questions asked (CI, scripts)
+devbase doctor                     # read-only diagnosis
 devbase gate --dir .               # VERIFIED / BLOCKED / INCOMPLETE (exit 0/1/2)
 ```
 
-## API keys opcionales
+## Optional API keys
 
-Ninguna es obligatoria. `CONTEXT7_API_KEY` sube los límites de Context7 (gratis en https://context7.com/dashboard). `devbase doctor` te avisa si falta.
+None required. `CONTEXT7_API_KEY` raises Context7 limits (free at https://context7.com/dashboard). `devbase doctor` warns when missing.
 
-## Estado y roadmap
+## Status and roadmap
 
-`v0.12.x`: setup interactivo, 25 packs de reglas, gate estricto con evidencia JSON (suites del proyecto + build + Semgrep + E2E condicional), instaladores con checksum, CI con tests + Semgrep.
+`v0.12.x`: interactive setup, 25 rule packs, strict gate with JSON evidence (project suites + build + Semgrep + conditional E2E), checksum installers, CI with tests + Semgrep.
 
-VERIFIED significa: los checks definidos pasaron en este snapshot exacto (commit + working tree + toolchain registrados). No significa "correcto" — significa probado y reproducible.
+VERIFIED means: the defined checks passed on this exact snapshot (commit + working tree + toolchain on record). Not "correct" — proven and reproducible.
 
-Siguiente: profiles de verificación por stack (PHPStan/Pint, ESLint, ruff/mypy, clippy…), adapters Cline/Roo/Kilo/Continue.
+Next: per-stack verification profiles (PHPStan/Pint, ESLint, ruff/mypy, clippy…), Cline/Roo/Kilo/Continue adapters.
 
-## Contribuir
+## Contributing
 
-Ver [CONTRIBUTING.md](CONTRIBUTING.md). Commits convencionales, sin atribución IA. Reportes de seguridad por GitHub Security Advisories ([SECURITY.md](SECURITY.md)).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Conventional commits, no AI attribution. Security reports via GitHub Security Advisories ([SECURITY.md](SECURITY.md)).
 
-## Licencia
+## License
 
-MIT — ver [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
